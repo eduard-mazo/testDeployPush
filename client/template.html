@@ -1,0 +1,517 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link rel='stylesheet' href='css/icoMoonFont.css'>
+  <style type="text/css">
+    html {
+      background: #f5f7f8;
+      font-family: 'Roboto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 0px;
+      font-size: 16px;
+    }
+
+    body {
+      margin: 0px;
+    }
+
+    .icon {
+      position: absolute;
+    }
+
+    .icon:before {
+      font-family: icomoon;
+      vertical-align: sub;
+      padding: 0;
+    }
+    *, *:before, *:after {
+      box-sizing: border-box;
+    }
+    h5 {
+      text-align: center;
+    }
+    ::placeholder {
+      color: white;
+      opacity: 0.6;
+      font-size: 1em;
+    }
+
+    .pageWrapper {
+      position: relative;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .container .icon.password:before {
+      content: '\eb53';
+      padding: 0px 0px 0px 4px;
+    }
+
+    .container .icon.user:before {
+      content: '\eaf7';
+    }
+
+    .container .icon.email:before {
+      content: '@';
+      font-weight: bold;
+    }
+
+    .container .fieldRow .user,
+    .container .fieldRow .password {
+      left: 7px;
+      top: 16px;
+    }
+    .container .fieldRow .email {
+      left: 3px;
+      top: 8px;
+    }
+
+    .username {
+      margin: 0px 0px 20px 0px;
+    
+    }
+    .modal {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .modal .modalHeader .title {
+      text-align: center;
+    }
+
+    .container {
+      position: relative;
+      margin: 100px auto;
+      padding: 50px;
+      width: 400px;
+      height: auto;
+      background-color: #247cbc;
+      font-size: 1.5em;
+      color: white;
+      border-radius: 5px;
+    }
+
+    .container .close {
+      color: white;
+      position: absolute;
+      top: 0px;
+      right: 15px;
+      font-size: 50px;
+    }
+
+    .container .close:hover,
+    .container .close:focus {
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .container .vendorRow {
+      border: 1px solid #999;
+      border-radius: 5px;
+      padding: 10px;
+      margin: 0px 0px 10px 0px;
+      cursor: pointer;
+    }
+
+    .container .vendorRow:hover {
+      opacity: 0.7;
+    }
+
+    .container .fieldRow {
+      position: relative;
+      margin: 0 0 1em 0;
+      text-align: left;
+    }
+
+    .container .fieldRow .rowInput {
+      width: 100%;
+      background-color: #318abe;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      border-bottom: solid 1px transparent;
+      padding: 15px 35px;
+      font-size: 1em;
+    }
+
+    .container  .fieldRow .rowInput:active,
+    .container  .fieldRow .rowInput:focus {
+      outline: none;
+      border-color: #e17461 !important;
+    }
+
+    .genericButton {
+      width: 100%;
+      padding: 10px;
+      border: 0 none;
+      border-radius: 8px;
+      background: #e17461;
+      color: white;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+
+    .genericButton:hover {
+      background: #e17461b3;
+    }
+
+    .genericButton:active,
+    .genericButton:focus {
+      outline: none;
+    }
+
+    .content {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .content .userHeader {
+      text-align: center;
+      color: #333;
+    }
+    
+    .content .profilePic {
+      border-radius: 50%;
+    }
+
+    .content .userHeader .logOut {
+      color: #999
+    }
+
+    .content .userHeader .logOut:hover {
+      cursor: pointer;
+      color: #333;
+    }
+
+    #pics {
+      margin: 20px 0px 0px 0px;
+    }
+
+    #pics .buttonContainer {
+      width: 240px;
+      margin: 0px auto 10px auto;
+    }
+
+    #pics .band {
+      max-width: 1024px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+      grid-gap: 20px;
+      padding: 0px;
+      justify-content: center;
+      list-style: none;
+    }
+
+    #pics .card {
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      color: #444;
+      transition: all .1s ease-in;
+    }
+
+    #pics .card article {
+      padding: 20px;
+    }
+
+    #pics .card:hover {
+      top: -2px;
+      box-shadow: 0 4px 5px rgba(0,0,0,0.2);
+    }
+
+    #pics .card span {
+      font-size: 12px;
+      letter-spacing: .05em;
+    }
+
+    #pics .card img {
+      width: 320px;
+      height: 320px;
+    }
+
+  </style>
+  <title>Push Manager</title>
+</head>
+<body>
+  <main class="pageWrapper">
+    <section class="modal">
+      <section class="container login">
+        <div class="modalHeader">
+          <h2 class="title">PUSH NOTIFICATION</h2>
+        </div>
+        <form class="submitForm userSignIn">
+          <div class="fieldRow">
+            <span class="icon user"></span>
+            <input class="rowInput userIdentifier" type="text" name="userIdentifier" placeholder="Username or email" autocorrect="off" autocapitalize="off" required/>
+          </div>
+          <div class="fieldRow">
+            <span class="icon password"></span>
+            <input class="rowInput" type="password" name="password" placeholder="Password" autocorrect="off" autocapitalize="off" required/>
+            <span class="icon hideShow hide"></span>
+          </div>
+          <div>
+            <button type="submit" class="genericButton signInUp"><span>Login</span></button>
+          </div>
+        </form>
+      </section><!-- end section.login -->
+    </section>
+    <section class="content">
+      <header class="userHeader">
+        <h1 class="userName"></h1>
+        <span class="logOut">LogOut</span>
+      </header>
+      <section id="pics">
+        <div class="buttonContainer">
+          <button class="genericButton allowNotify">Allow notifications</button>  
+        </div>
+        <div class="buttonContainer">
+          <button class="genericButton sendNotify">Send notification</button>
+        </div>
+        <ul class="band">
+        </ul>
+      </section>
+    </section>
+  </main>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script type='text/javascript'>
+  var cObj;
+  var appSW = {};
+  var _forceUpdate = true; // if force, reload when new service worker found rather then simply loading next browser load.  Use for bugfixes, important releases.
+
+  document.addEventListener('DOMContentLoaded', function kickOff() {
+    initPage();
+  });
+
+  /**
+   * KickOff for get the cookies and set the listeners call once the browser is ready
+   * @function initPage
+   */
+  function initPage() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function fcnPageLoad() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function fcnRegisterSW(reg) {
+            // Ensure refresh is only called once.
+            // This works around a bug in 'force update on reload'.
+            var refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', function fcnBindControllerChange() {
+              console.log('CONTROLLER CHANGE');
+              if (refreshing) return;
+              window.location.reload();
+              refreshing = true;
+            });
+            reg.addEventListener('updatefound', function fcnBindUpdateFound() {
+              console.log('GOT update');
+              appSW._trackInstalling(reg.installing);
+            });
+            navigator.serviceWorker.ready.then(function fcnSWReady(SWReg) {
+              console.log('Service Worker Registered');
+              appSW.SWReg = SWReg;
+              SWReg.pushManager && SWReg.pushManager.getSubscription().then(function fcnPushSubscription(sub) {
+                if (sub === null) {
+                  appSW.subscribeUser(SWReg);
+                } else {
+                  appSW.subscription = sub;
+                }
+              }).catch(function fcnCatchSubscription(err) {
+                console.log(err);
+              });
+            });
+          })
+          .catch(function fcnCatchSWReady(err) {
+            console.log(err);
+          });
+      });
+    } else {
+      console.warn('Push messaging is not supported');
+    }
+    var cS = document.cookie.match(new RegExp('cs=([^;]+)'));
+    cObj = cS && JSON.parse(atob(cS[1]));
+    if (cObj && cObj.ref) {
+      $('.content').show();
+      var $content = $('.content');
+      $content.find('.userName').text(cObj.username);
+      $content.find('.genericButton').on('click', function notificationActions(e) {
+        var $this = $(e.target);
+        if ($this.hasClass('allowNotify')) {
+          setUpNotifications();
+        } else {
+          subscribeNotify({body: 'hello!'});
+        }
+      })
+
+    } else {
+      $('.modal').show();
+    }
+    // (div.vendorRow) Create the providers authUrl.
+    $('.modal .container').find('form').submit(function submitData(e) {
+      e.preventDefault();
+      if (navigator.onLine) {
+      var callback;
+      var postUrl;
+      var data;
+      var $this = $(this);
+      data = $this.serialize();
+      if ($this.hasClass('userSignIn')) {
+        callback = userLogin;
+        postUrl = '/user/login';
+      }
+      $.ajax({
+        type: 'POST',
+        url: postUrl,
+        data: data,
+        success: function fcnCallbackSuccess(resp) {
+          callback($this, resp);
+        },
+        error: function fcnCallbackError(resp) {
+          callback($this, resp);
+        }
+      });
+    } else {
+      console.log('No internet Conection')
+    }
+    })
+    // (span.logOut) Clean the cookies.
+    $('.content .userHeader').on('click', '.logOut', function logOut() {
+      document.cookie = 'cs=;';
+      window.location.href = '/';
+    });
+  }
+
+  /**
+   * Ask for notification permission and check if supported
+   * @function setUpNotifications
+   * @return {Undefined} _
+   */
+  function setUpNotifications() {
+    if (Notification.permission == 'default') {
+      if ('safari' in window) {
+        Notification.requestPermission(function callback() {
+          if (Notification.permission == 'granted') {
+            firstNotification();
+          }
+        });
+      } else {
+        Notification.requestPermission()
+          .then(function fcnFirstNotification(resp) {
+            if (resp == 'granted') {
+              firstNotification();
+            }
+          });
+      }
+    } else {
+      console.log('Hello state: ', Notification.permission);
+    }
+  }
+
+
+  /** Send a testing notification
+   * @function firstNotification
+   * @returns {Undefined} _
+   */
+  function firstNotification() {
+    var notifyOptions = {
+      body: 'First notification!',
+      vibrate: [100, 50, 100],
+      tag: 'id1'
+    };
+    if (!$('body').hasClass('mobile')) {
+      // eslint-disable-next-line no-unused-vars
+      var notify = new Notification('Desktop Notification', notifyOptions);
+    }
+    appSW.subscribeUser(appSW.SWReg);
+  }
+
+  /**
+   * Send the request for the push notification
+   * @function subscribeNotify
+   * @param {Object} notifyOptions Notification options
+   * @returns {Undefined} _
+   */
+  function subscribeNotify(notifyOptions) {
+    console.log(appSW.subscription.toJSON());
+    $.post( '/user/subcription/subscribe', {subscription: appSW.subscription.toJSON()})
+      .done(function success(resp) {
+        console.log('success: ', resp);
+      })
+      .fail(function error(resp) {
+        console.log('Error: ', resp);
+      })
+  }
+
+  /**
+   * Update UI after login POST.
+   * @function createFallbackData
+   * @param {Object} $domRef DOM element => modal form container
+   * @return {Object | String} resp Server login response data
+   */
+  function userLogin($domRef, resp) {
+    if (resp.url) {
+      window.location.href = resp.url;
+    } else {
+      console.log('')
+    }
+  }
+
+  /**
+  * @function urlB64ToUint8Array
+  * @param {String} base64String Public key
+  * @returns {Array} Encoded key
+  */
+  function urlB64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length); 
+    for (var i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  appSW.subscribeUser = function fcnSubscribeSW(SWReg) {
+    if ((Notification.permission == 'granted') && SWReg) {
+      var serverNotificationPlublicKey = 'BDcRnzM70hstg-ONNzzQTsV5wDlat0IcLpZ3HN4QgkECNjK7vsLOnZe-xgKUL54VIphnrjGnVsQu4DZdO3PfSQM';
+      var applicationServerKey = urlB64ToUint8Array(serverNotificationPlublicKey);
+      SWReg.pushManager && SWReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey
+      })
+        .then(function fcnSubscription(subscription) {
+          appSW.subscription = subscription;
+          console.log('User is subscribed:', subscription);
+        })
+        .catch(function fcnError(err) {
+          if (Notification.permission == 'denied') {
+            console.warn('Permission for notifications was denied');
+          } else {
+            console.error('Failed to subscribe the user: ', err);
+          }
+        });
+    }
+  };
+
+  appSW._updateReady = function fcnUpdateReady(worker) {
+    if (_forceUpdate) {
+      // worker.postMessage({action: 'deleteDynamic'}); // Good idea?
+      worker.postMessage({action: 'skipWaiting'});
+    }
+  };
+
+  appSW._trackInstalling = function fcnInstalling(worker) {
+    worker.addEventListener('statechange', function fcnBindStateChange() {
+      if (worker.state == 'installed') {
+        appSW._updateReady(worker);
+      }
+    });
+  };
+
+  </script>
+</body>
+</html>
