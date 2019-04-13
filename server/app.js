@@ -66,15 +66,31 @@ var userIndexBy;
    * @return {undefined}
    */
   async function subscribe(req, res) {
+    var userId = req.session.ref;
+    var userSubscription = getUserSubscriptionDevice(userId, req.body.subscription.endpoint);
+
     if (req.params.type == 'subscribe') {
-      try {
-        await userAccounts.updateOne({_id: new ObjectID(req.session.ref)}, {$set: {devices: {hello: 'hi'}}});
-        var response = await userAccounts.findOne({_id: new ObjectID(req.session.ref)});
-        console.log(response);
-        res.status(200).send(response);
-      } catch (error) {
-        console.log(error);
-        res.status(500).send('Error');
+      if ((!req.session.endpoint && !userSubscription)) {
+        var deviceId = req.body.deviceId + '_' + (new Date().getTime()).toString(36);
+        var device = {[deviceId]: {endPoints: [req.body.subscription.endpoint], state: 'active', LUT: (new Date()).getTime()}};
+        try {
+          await userAccounts.updateOne({_id: new ObjectID(userId)}, {$set: {devices: device}});
+          userIndexBy._id[userId].devices[deviceId] = device[deviceId];
+          req.session.endpoint = req.body.subscription.endpoint;
+          res.status(201).send({message: 'Register successfully'});
+        } catch (error) {
+          console.log(error);
+          res.status(500).send('Error');
+        }
+      } else if ((!req.session.endpoint && userSubscription)) {
+        req.session.endpoint = userSubscription.endPoints[0];
+        res.status(200).send({message: 'Subscription Exist! and cookie updated!'});
+      } else if ((req.session.endpoint && (req.session.endpoint != req.body.subscription.endpoint))) {
+        updateUserSubscription(userId, req.session.endpoint, req.body.subscription.endpoint);
+        req.session.endpoint = req.body.subscription.endpoint;
+        res.status(200).send({message: 'Register updated'});
+      } else if (req.session.endpoint == userSubscription.endPoints[0]) {
+        res.status(200).send({message: 'Subscription Exist!'});
       }
     } else if (req.params.type == 'unsubscribe') {
       console.log('Unsubscribe Pending!!..');
@@ -82,36 +98,49 @@ var userIndexBy;
   }
 
   /**
-   * Route that works as endPoint for the OAuth 2.0 callback, can create an user or just update the session.
-   * @function getUserData
+   * @function getUserSubscriptionDevice
    * @param {Object} id _app_ user ID.
-   * @return {Object} Promise that resolve with user posts or reject with some request error (like 429 (Too many request)).
+   * @param {Object} endpoint _app_ subscription endpoint
+   * @return {Object} user device id
    */
-  function getUserData(id) {
-    return new Promise(function fetchData(resolve, reject) {
-      var body = '';
-      https.get('https://api.instagram.com/v1/users/self/media/recent/?access_token=' + getUserToken(id), function fcnGet(resp) {
-        resp.setEncoding('utf8');
-        resp.on('data', function fcnData(d) {
-          body += d;
-        });
-        resp.on('end', function fcnEnd() {
-          var response = {
-            content: JSON.parse(body),
-            status: this.statusCode,
-            statusMessage: this.statusMessage
-          };
-          if (this.statusCode >= 200 && this.statusCode <= 226) {
-            resolve(response);
-          } else if (this.statusCode >= 400 && this.statusCode <= 511) {
-            reject(response);
-          }
-        });
-      }).on('error', function fcnError(e) {
-        reject(e);
-      });
-    });
+  function getUserSubscriptionDevice(id, endpoint) {
+    var user = userIndexBy._id[id];
+    for (var device in user.devices) {
+      console.log('User device: ', device, ' has the requesting endpoint: ', user.devices[device].endPoints.includes(endpoint));
+      if (user.devices[device].endPoints.includes(endpoint)) {
+        return {device: device, endPoints: user.devices[device].endPoints};
+      }
+    }
+    return null;
   }
+
+  /**
+   * @function updateUserSubscription
+   * @param {Object} id _app_ user ID.
+   * @param {Object} oldEndpoint _app_ old subscription endpoint
+   * @param {Object} newEndpoint _app_ new subscription endpoint
+   * @return {Object} user device id
+   */
+  function updateUserSubscription(id, oldEndpoint, newEndpoint) {
+    var userDevice = getUserSubscriptionDevice(id, oldEndpoint);
+    userIndexBy._id[id].devices[userDevice.device].endPoints.unshift(newEndpoint);
+  }
+
+  // /**
+  //  * @function existSubscription
+  //  * @param {Object} id _app_ user ID.
+  //  * @param {Object} endpoint _app_ subscription endpoint
+  //  * @return {Object} Promise that resolve with user posts or reject with some request error (like 429 (Too many request)).
+  //  */
+  // function existSubscription(id, endpoint) {
+  //   var user = userIndexBy._id[id];
+  //   for (var device in user.devices) {
+  //     console.log('User device: ', device, ' has the requesting endpoint: ', user.devices[device].endPoints.includes(endpoint));
+  //     if (user.devices[device].endPoints.includes(endpoint)) {
+  //       return true;
+  //     }
+  //   }
+  // }
 
   /**
    * Route that works as endPoint for the OAuth 2.0 callback, can create an user or just update the session.
@@ -232,7 +261,7 @@ var userIndexBy;
             reject(err);
           } else {
             res.forEach(function fcnRes(elm) {
-              userIndexBy._id[elm._id] = elm;
+              userIndexBy._id[new ObjectID(elm._id)] = elm;
               userIndexBy.username[elm.username] = elm;
               userIndexBy.email[elm.email] = elm;
             });

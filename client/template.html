@@ -279,12 +279,19 @@
     </section>
   </main>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="bowser.js"></script>
   <script type='text/javascript'>
   var cObj;
   var appSW = {};
   var _forceUpdate = true; // if force, reload when new service worker found rather then simply loading next browser load.  Use for bugfixes, important releases.
+  var userDeviceId;
 
   document.addEventListener('DOMContentLoaded', function kickOff() {
+    var parserDevice = bowser.getParser(window.navigator.userAgent);
+    userDeviceId = parserDevice.getPlatformType() + '_' + parserDevice.getOSName() + '_' + parserDevice.getBrowserName();
+    if (parserDevice.getPlatformType() == 'mobile') {
+      $('body').addClass('mobile');
+    }
     initPage();
   });
 
@@ -342,7 +349,7 @@
         if ($this.hasClass('allowNotify')) {
           setUpNotifications();
         } else {
-          subscribeNotify({body: 'hello!'});
+          requestPushNotification({body: 'Hello'});
         }
       })
 
@@ -430,13 +437,13 @@
 
   /**
    * Send the request for the push notification
-   * @function subscribeNotify
+   * @function sendSubscriptionToServer
    * @param {Object} notifyOptions Notification options
    * @returns {Undefined} _
    */
-  function subscribeNotify(notifyOptions) {
-    console.log(appSW.subscription.toJSON());
-    $.post( '/user/subcription/subscribe', {subscription: appSW.subscription.toJSON()})
+  function sendSubscriptionToServer(subscription) {
+    console.log(subscription.toJSON());
+    $.post( '/user/subcription/subscribe', {subscription: subscription.toJSON(), deviceId: userDeviceId})
       .done(function success(resp) {
         console.log('success: ', resp);
       })
@@ -485,6 +492,7 @@
       })
         .then(function fcnSubscription(subscription) {
           appSW.subscription = subscription;
+          sendSubscriptionToServer(subscription)
           console.log('User is subscribed:', subscription);
         })
         .catch(function fcnError(err) {
