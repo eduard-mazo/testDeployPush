@@ -1,5 +1,5 @@
 {
-  "name": "pushmsgmngr",
+  "name": "testdeploypush",
   "version": "1.0.0",
   "description": "Handle push notification and user subscriptions",
   "main": "server/app.js",
@@ -13,14 +13,13 @@
   "author": "dev@techtransit.com",
   "license": "MIT",
   "homepage": "https://github.com/eduard-mazo/testDeployPush/blob/master/README.md",
-  "devDependencies": {
+  "dependencies": {
     "body-parser": "^1.18.3",
-    "bowser": "^2.2.1",
     "cookie-session": "^1.3.3",
     "eslint": "^5.16.0",
     "express": "^4.16.4",
     "mongodb": "^3.2.3",
-    "mongodb-memory-server": "^4.2.1",
+    "mongodb-memory-server": "^4.2.2",
     "web-push": "^3.3.3"
   }
 }
