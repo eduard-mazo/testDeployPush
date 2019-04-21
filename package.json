@@ -2,17 +2,17 @@
   "name": "pushmsgmngr",
   "version": "1.0.0",
   "description": "Handle push notification and user subscriptions",
-  "main": "app.js",
+  "main": "server/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server/app.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/paultman/pushmsgmngr.git"
+    "url": "git@github.com:eduard-mazo/testDeployPush.git"
   },
   "author": "dev@techtransit.com",
   "license": "MIT",
-  "homepage": "https://bitbucket.org/paultman/pushmsgmngr#readme",
+  "homepage": "https://github.com/eduard-mazo/testDeployPush/blob/master/README.md",
   "devDependencies": {
     "body-parser": "^1.18.3",
     "bowser": "^2.2.1",
