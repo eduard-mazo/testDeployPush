@@ -3,7 +3,7 @@
 var MongodbMemoryServer = require('mongodb-memory-server');
 var {MongoClient, ObjectID} = require('mongodb');
 var path = require('path');
-var port = (process.argv[2] && process.argv[2].substr(process.argv[2].indexOf('=') + 1)) || 8300;
+var port = process.env.PORT || (process.argv[2] && process.argv[2].substr(process.argv[2].indexOf('=') + 1)) || 8300;
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieSession = require('cookie-session');
