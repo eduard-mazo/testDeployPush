@@ -4,3 +4,4 @@ package-lock.json
 .vscode/
 coverage
 test/__test__/__snapshots__
+client/bowser.js

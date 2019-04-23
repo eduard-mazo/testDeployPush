@@ -2,7 +2,6 @@
 var webPush = require('web-push');
 
 module.exports = function pushMngr(userIndex) {
-  var pushNotifyRecord = {};
   var self = {};
 
   var _getUserDeviceIdByEndpoint = userIndex.getUserDeviceIdByEndpoint;
@@ -11,8 +10,8 @@ module.exports = function pushMngr(userIndex) {
   var _getAllDevicesIds = userIndex.getAllDevicesIds;
   var _getAllUserDevices = userIndex.getAllUserDevices;
   var _updateUserSubscription = userIndex.updateUserSubscription;
-  var _updateUserDeviceState = userIndex.updateUserDeviceState;
-  var _updateDevicesType = userIndex.updateDevicesType;
+  var _disableUserDevice = userIndex.disableUserDevice;
+  var _updateDevicesState = userIndex.updateDevicesState;
 
   self.clientPushConfirmation = clientPushConfirmation;
   /**
@@ -35,26 +34,29 @@ module.exports = function pushMngr(userIndex) {
    */
   async function subscribe(req, res) {
     var userId = req.session.ref;
+    var deviceId;
+    var deviceState;
 
     var requestDeviceId = _getUserDeviceIdByEndpoint(userId, req.body.subscription.endpoint);
     var endpointDevice = _getDeviceById(userId, requestDeviceId);
     var userDevice = _getDeviceById(userId, req.body.deviceId);
+
+    deviceId = (req.body.deviceId || requestDeviceId);
+    deviceState = ((userDevice && userDevice.state) || (endpointDevice && endpointDevice.state));
+
     if (req.params.type == 'subscribe') {
       if ((!userDevice && !endpointDevice)) {
-        var deviceId = 'd_' + userId + '_' + (new Date().getTime()).toString(36);
+        deviceId = 'd_' + userId + '_' + (new Date().getTime()).toString(36);
         _createDeviceRecord(userId, deviceId, req.body.subscription, req.body.deviceDescr);
-        res.status(201).send({message: 'Register successfully', deviceId: deviceId});
+        res.status(201).send({message: 'Register successfully', deviceId: deviceId, state: 'abeable'});
       } else if (((userDevice && (userDevice.endpoints[0] != req.body.subscription.endpoint) || (!userDevice && (endpointDevice.endpoints[0] != req.body.subscription.endpoint))))) {
-        _updateUserSubscription(userId, (req.body.deviceId || requestDeviceId), req.body.subscription);
-        res.status(200).send({message: 'Register updated', devices: _getAllUserDevices(userId)});
+        _updateUserSubscription(userId, deviceId, req.body.subscription);
+        res.status(200).send({message: 'Register updated', deviceId: deviceId, state: deviceState});
       } else if ((userDevice && (userDevice.endpoints[0] == endpointDevice.endpoints[0])) || (!userDevice && (endpointDevice.endpoints[0] == req.body.subscription.endpoint))) {
-        res.status(200).send({message: 'Subscription Exist!'});
+        res.status(200).send({message: 'Subscription Exist!', deviceId: deviceId, state: deviceState});
       }
     } else if (req.params.type == 'unsubscribe') {
       console.log('Unsubscribe Pending!!..');
-    } else if (req.params.type == 'list') {
-      console.log('List Pending!!..');
-      res.status(200).send(_getAllUserDevices(userId));
     }
   }
 
@@ -67,37 +69,74 @@ module.exports = function pushMngr(userIndex) {
    */
   function devices(req, res) {
     var type = req.params.type;
+    var devicesList;
     if (type == 'list') {
-      var devicesList = _getAllUserDevices(req.session.ref);
+      devicesList = _getAllUserDevices(req.session.ref);
       if (devicesList) {
         res.status(200).send({devices: devicesList});
       } else {
         res.status(404);
       }
     } else if (type == 'update') {
-      _updateDevicesType(req.session.ref, req.body.deviceId, req.body.deviceType);
-      res.status(200).send({message: 'Device updated!'});
+      var userDevice = _getDeviceById(req.session.ref, req.body.deviceId);
+      var subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
+      var content = {
+        title: 'Device registered',
+        message: {
+          body: 'This device is ready for VP push notifications.',
+          badge: 'img/vpBlack.png',
+          icon: 'img/vp.png',
+          tag: req.body.deviceId
+        }
+      };
+      dispatchPush('push', req.body.deviceId, subscription, content, 60, function complete(error, deviceId) {
+        devicesList = _getAllUserDevices(req.session.ref);
+        if (!error) {
+          _updateDevicesState(req.session.ref, deviceId);
+          res.status(200).send({message: 'Device updated!', devices: devicesList});
+        } else {
+          res.status(404).send({message: 'Choose another!', devices: devicesList});
+        }
+      });
     }
   }
 
   self.sendPushNotification = sendPushNotification;
   function sendPushNotification(req, res) {
-    var userDevice = _getDeviceById(req.session.ref, req.body.content.message.tag);
-    if (userDevice) {
-      res.status(200).send('Sending..');
-      var subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-      dispatchPush(userDevice.type, subscription, 60, req.body.content);
-    } else {
-      res.status(404);
+    var userDevice;
+    var subscription;
+    res.status(200).send('Sending..');
+    if (req.params.type == 'broadcast') {
+      var allAppDevices = _getAllDevicesIds();
+      allAppDevices.forEach(function sendPing(elm) {
+        userDevice = _getDeviceById(elm.split('_')[1], elm);
+        if (userDevice.state != 'disable') {
+          subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
+          dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), elm, subscription, 60, req.body.content);
+        }
+      });
+    } else if (req.params.type == 'single') {
+      userDevice = _getDeviceById(req.session.ref, req.body.content.message.tag);
+      if (userDevice && (userDevice.state != 'disable')) {
+        subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
+        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), req.body.content.message.tag, subscription, 60, req.body.content);
+      } else {
+        res.status(404);
+      }
     }
-    // for (var deviceId in userDevices) {
-    //   if (userDevices[deviceId].state == 'active') {
-    //     dispatchPush({endpoint: userDevices[deviceId].endpoints[0], keys: userDevices[deviceId].keys}, deviceId, req.body.content);
-    //   }
-    // }
   }
-
-  function dispatchPush(type, subscription, TTL, content) {
+  /**
+   * Dispatch push notification to some user endpoint
+   * @function dispatchPush
+   * @param {string} type how to show the notification, (push => push notification, local => UI notification)
+   * @param {string} deviceId user deviceId
+   * @param {object} subscription user subscription
+   * @param {object} content notification payload
+   * @param {number} [TTL] time in seconds by default 7 days.
+   * @param {function} callback arguments (error, deviceId)
+   * @return {undefined}
+   */
+  function dispatchPush(type, deviceId, subscription, content, TTL, callback) {
     var vapidPublicKey = 'BIg1bDl3q9tc3wUvx3z1XYjz8Kg6SlJiLN_zo2iyl6Wc0CHzMKo2JxtSDGdheYiFugvfjZ2P0ltQT9-M8oWgMZc';
     var vapidPrivateKey = '12_gKITp6niRmQ4d4hyRrxS5R5lvoVgMkZOQP1SHPEs';
     var options = {
@@ -116,21 +155,14 @@ module.exports = function pushMngr(userIndex) {
       payload,
       options
     ).then(function success() {
-      console.log('Push Application Server - Notification sent to: ' + content.message.tag);
+      console.log('Push Application Server - Notification sent to: ' + deviceId);
+      ((typeof callback == 'function') && callback(null, deviceId));
     }).catch(function error() {
-      console.log('ERROR in sending Notification to: ' + content.message.tag);
-      _updateUserDeviceState(content.message.tag, 'disable');
+      console.log('ERROR in sending Notification to: ' + deviceId);
+      _disableUserDevice(deviceId);
+      ((typeof callback == 'function') && callback(true, deviceId));
     });
   }
-
-  // setInterval(function checkUserEndpoints() {
-  //   console.log('checking users!');
-  //   var allAppDevices = _getAllDevicesIds();
-  //   allAppDevices.forEach(function sendPing(elm, index) {
-  //     var userDevice = _getDeviceById(elm.split('_')[1], elm);
-  //     dispatchPush({endpoint: userDevice.endpoints[0], keys: userDevice.keys}, elm, {ping: 'ping'});
-  //   });
-  // }, 10000);
 
   return self;
 };

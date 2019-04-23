@@ -73,16 +73,6 @@ module.exports = function userIndex(db, ObjectID) {
     return (((typeof email == 'string') && userIndexBy.email[email]) ? userIndexBy.email[email] : null);
   }
 
-
-  // /**
-  //  * Get user instagram _accessToken_ with the user _app_ id.
-  //  * @function getUserToken
-  //  * @param {string} id _app_ username
-  //  * @return {String | null} _accessToken_ || null if not exist
-  //  */
-  // function getUserToken(id) {
-  //   return ((userIndexBy._id[id] ? userIndexBy._id[id].aT : null));
-  // }
   self.getUserDeviceIdByEndpoint = getUserDeviceIdByEndpoint;
   /**
    * @function getUserDeviceIdByEndpoint
@@ -109,10 +99,10 @@ module.exports = function userIndex(db, ObjectID) {
    * @param {String} deviceId Unique device user ID.
    * @param {String} subscription User browser subscription
    * @param {String} deviceDescr User device description
-   * @return {Object} user device id
+   * @return {undefined}
    */
   function createDeviceRecord(id, deviceId, subscription, deviceDescr) {
-    var device = {[deviceId]: {endpoints: [subscription.endpoint], state: 'active', type: 'local', LUT: (new Date()).getTime(), keys: subscription.keys, descr: deviceDescr}};
+    var device = {[deviceId]: {endpoints: [subscription.endpoint], state: 'abeable', LUT: (new Date()).getTime(), keys: subscription.keys, descr: deviceDescr}};
     userAccounts.updateOne({_id: new ObjectID(id)}, {$set: {devices: device}});
     userIndexBy._id[id].devices[deviceId] = device[deviceId];
   }
@@ -121,30 +111,29 @@ module.exports = function userIndex(db, ObjectID) {
   /**
    * @function getAllUserDevices
    * @param {String} id _app_ user ID.
-   * @return {Object} user devices id
+   * @return {Object} user devices
    */
   function getAllUserDevices(id) {
     return (((typeof id == 'string') && userIndexBy._id[id] && userIndexBy._id[id].devices) ? userIndexBy._id[id].devices : null);
   }
 
-  self.updateDevicesType = updateDevicesType;
+  self.updateDevicesState = updateDevicesState;
   /**
-   * @function updateDevicesType
+   * @function updateDevicesState
    * @param {String} id _app_ user Id
    * @param {String} deviceId _app_ user device Id to update
    * @param {String} deviceType User device type (mobile or desktop)
    * @return {undefined}
    */
-  function updateDevicesType(id, deviceId, deviceType) {
+  function updateDevicesState(id, deviceId) {
     var matchType;
     if ((typeof id == 'string') && userIndexBy._id[id]) {
       for (var device in userIndexBy._id[id].devices) {
-        matchType = ((userIndexBy._id[id].devices[device].descr).match(deviceType) ? true : false);
-        if (matchType) {
+        if (userIndexBy._id[id].devices[device].state != 'disable') {
           if (device == deviceId) {
-            userIndexBy._id[id].devices[device].type = 'push';
+            userIndexBy._id[id].devices[device].state = 'active';
           } else if (matchType) {
-            userIndexBy._id[id].devices[device].type = 'local';
+            userIndexBy._id[id].devices[device].state = 'abeable';
           }
         }
       }
@@ -177,16 +166,17 @@ module.exports = function userIndex(db, ObjectID) {
     return ((userIndexBy._id[id] && userIndexBy._id[id].devices && userIndexBy._id[id].devices[deviceId]) ? userIndexBy._id[id].devices[deviceId] : null);
   }
 
-  self.updateUserDeviceState = updateUserDeviceState;
+  self.disableUserDevice = disableUserDevice;
   /**
-   * @function updateUserDeviceState
+   * disable all the bad endpoints.
+   * @function disableUserDevice
    * @param {String} deviceId _app_ user device is
-   * @param {String} newState _app_ new user device state
-   * @return {Object} user device id
+   * @return {undefined}
    */
-  function updateUserDeviceState(deviceId, newState) {
+  function disableUserDevice(deviceId) {
     var userId = deviceId.split('_')[1];
-    userIndexBy._id[userId].devices[deviceId].state = newState;
+    var dataToUpdate = Object.assign(userIndexBy._id[userId].devices[deviceId], {state: 'disable', LUT: (new Date()).getTime()});
+    userAccounts.updateOne({_id: new ObjectID(userId)}, {$set: {devices: {[deviceId]: dataToUpdate}}});
     console.log('User device: ' + deviceId + ' was disable');
   }
 
@@ -196,20 +186,19 @@ module.exports = function userIndex(db, ObjectID) {
    * @param {String} id _app_ user ID.
    * @param {String} userDeviceId _app_ old subscription endpoint
    * @param {Object} newSubscription _app_ new user subscription
-   * @return {Object} _
+   * @return {undefined}
    */
   function updateUserSubscription(id, userDeviceId, newSubscription) {
     var oldDeviceData = userIndexBy._id[id].devices[userDeviceId]; // In case that the DB updateOne fail.
     userIndexBy._id[id].devices[userDeviceId].endpoints.unshift(newSubscription.endpoint);
-    var newDeviceData = {
-      endpoints: userIndexBy._id[id].devices[userDeviceId].endpoints,
-      state: 'active',
-      LUT: (new Date()).getTime(),
-      keys: newSubscription.keys,
-      descr: userIndexBy._id[id].devices[userDeviceId].descr
-    };
-    userIndexBy._id[id].devices[userDeviceId] = newDeviceData;
-    userAccounts.updateOne({_id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: newDeviceData}}})
+    var dataToUpdate = Object.assign(userIndexBy._id[id].devices[userDeviceId],
+      {
+        endpoints: userIndexBy._id[id].devices[userDeviceId].endpoints,
+        LUT: (new Date()).getTime(),
+        keys: newSubscription.keys
+      });
+
+    userAccounts.updateOne({_id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: dataToUpdate}}})
       .catch(function recoverOldData() {
         userIndexBy._id[id].devices[userDeviceId] = oldDeviceData;
         console.log('Error while writing in DB new enpoint for: ', userDeviceId);
