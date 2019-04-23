@@ -112,14 +112,14 @@ module.exports = function pushMngr(userIndex) {
         userDevice = _getDeviceById(elm.split('_')[1], elm);
         if (userDevice.state != 'disable') {
           subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-          dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), elm, subscription, 60, req.body.content);
+          dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), elm, subscription, req.body.content, 60);
         }
       });
     } else if (req.params.type == 'single') {
       userDevice = _getDeviceById(req.session.ref, req.body.content.message.tag);
       if (userDevice && (userDevice.state != 'disable')) {
         subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), req.body.content.message.tag, subscription, 60, req.body.content);
+        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), req.body.content.message.tag, subscription, req.body.content, 60);
       } else {
         res.status(404);
       }
