@@ -91,21 +91,23 @@ module.exports = function pushMngr(userIndex) {
       var allAppDevices = _getAllDevicesIds();
       allAppDevices.forEach(function sendPing(elm) {
         userDevice = _getDeviceById(elm.split('_')[1], elm);
-        subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), subscription, 60, req.body.content);
+        if (userDevice.state != 'disable') {
+          subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
+          dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), elm, subscription, 60, req.body.content);
+        }
       });
     } else if (req.params.type == 'single') {
       userDevice = _getDeviceById(req.session.ref, req.body.content.message.tag);
-      if (userDevice) {
+      if (userDevice && (userDevice.state != 'disable')) {
         subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), subscription, 60, req.body.content);
+        dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), req.body.content.message.tag, subscription, 60, req.body.content);
       } else {
         res.status(404);
       }
     }
   }
 
-  function dispatchPush(type, subscription, TTL, content) {
+  function dispatchPush(type, deviceId, subscription, TTL, content) {
     var vapidPublicKey = 'BIg1bDl3q9tc3wUvx3z1XYjz8Kg6SlJiLN_zo2iyl6Wc0CHzMKo2JxtSDGdheYiFugvfjZ2P0ltQT9-M8oWgMZc';
     var vapidPrivateKey = '12_gKITp6niRmQ4d4hyRrxS5R5lvoVgMkZOQP1SHPEs';
     var options = {
@@ -124,21 +126,12 @@ module.exports = function pushMngr(userIndex) {
       payload,
       options
     ).then(function success() {
-      console.log('Push Application Server - Notification sent to: ' + content.message.tag);
+      console.log('Push Application Server - Notification sent to: ' + deviceId);
     }).catch(function error() {
-      console.log('ERROR in sending Notification to: ' + content.message.tag);
-      _updateUserDeviceState(content.message.tag, 'disable');
+      console.log('ERROR in sending Notification to: ' + deviceId);
+      _updateUserDeviceState(deviceId, 'disable');
     });
   }
-
-  // setInterval(function checkUserEndpoints() {
-  //   console.log('checking users!');
-  //   var allAppDevices = _getAllDevicesIds();
-  //   allAppDevices.forEach(function sendPing(elm, index) {
-  //     var userDevice = _getDeviceById(elm.split('_')[1], elm);
-  //     dispatchPush({endpoint: userDevice.endpoints[0], keys: userDevice.keys}, elm, {ping: 'ping'});
-  //   });
-  // }, 10000);
 
   return self;
 };

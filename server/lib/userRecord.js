@@ -73,16 +73,6 @@ module.exports = function userIndex(db, ObjectID) {
     return (((typeof email == 'string') && userIndexBy.email[email]) ? userIndexBy.email[email] : null);
   }
 
-
-  // /**
-  //  * Get user instagram _accessToken_ with the user _app_ id.
-  //  * @function getUserToken
-  //  * @param {string} id _app_ username
-  //  * @return {String | null} _accessToken_ || null if not exist
-  //  */
-  // function getUserToken(id) {
-  //   return ((userIndexBy._id[id] ? userIndexBy._id[id].aT : null));
-  // }
   self.getUserDeviceIdByEndpoint = getUserDeviceIdByEndpoint;
   /**
    * @function getUserDeviceIdByEndpoint
@@ -109,7 +99,7 @@ module.exports = function userIndex(db, ObjectID) {
    * @param {String} deviceId Unique device user ID.
    * @param {String} subscription User browser subscription
    * @param {String} deviceDescr User device description
-   * @return {Object} user device id
+   * @return {undefined}
    */
   function createDeviceRecord(id, deviceId, subscription, deviceDescr) {
     var device = {[deviceId]: {endpoints: [subscription.endpoint], state: 'abeable', LUT: (new Date()).getTime(), keys: subscription.keys, descr: deviceDescr}};
@@ -121,7 +111,7 @@ module.exports = function userIndex(db, ObjectID) {
   /**
    * @function getAllUserDevices
    * @param {String} id _app_ user ID.
-   * @return {Object} user devices id
+   * @return {Object} user devices
    */
   function getAllUserDevices(id) {
     return (((typeof id == 'string') && userIndexBy._id[id] && userIndexBy._id[id].devices) ? userIndexBy._id[id].devices : null);
@@ -179,14 +169,16 @@ module.exports = function userIndex(db, ObjectID) {
 
   self.updateUserDeviceState = updateUserDeviceState;
   /**
+   * disable all the bad endpoints.
    * @function updateUserDeviceState
    * @param {String} deviceId _app_ user device is
    * @param {String} newState _app_ new user device state
-   * @return {Object} user device id
+   * @return {undefined}
    */
   function updateUserDeviceState(deviceId, newState) {
     var userId = deviceId.split('_')[1];
     var dataToUpdate = Object.assign(userIndexBy._id[userId].devices[deviceId], {state: newState, LUT: (new Date()).getTime()});
+    userAccounts.updateOne({_id: new ObjectID(userId)}, {$set: {devices: {[deviceId]: dataToUpdate}}});
     console.log('User device: ' + deviceId + ' was disable');
   }
 
@@ -196,7 +188,7 @@ module.exports = function userIndex(db, ObjectID) {
    * @param {String} id _app_ user ID.
    * @param {String} userDeviceId _app_ old subscription endpoint
    * @param {Object} newSubscription _app_ new user subscription
-   * @return {Object} _
+   * @return {undefined}
    */
   function updateUserSubscription(id, userDeviceId, newSubscription) {
     var oldDeviceData = userIndexBy._id[id].devices[userDeviceId]; // In case that the DB updateOne fail.

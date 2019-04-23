@@ -10,7 +10,6 @@ var cookieSession = require('cookie-session');
 var SESSION_SECRET = 'ooo sooo secret string!!!! super secret!!! dont touch me!!';
 var creatingCollections = require('./lib/userMockData');
 
-// var userIndexBy;
 
 (async function setupDatabase(webserverCallback) {
   var mongod = new MongodbMemoryServer.default({});
@@ -54,7 +53,7 @@ var creatingCollections = require('./lib/userMockData');
 
   app.post('/sw/pushDelivery', pushMngrRoute.clientPushConfirmation);
 
-  await userIndex.buildUserIndex();
+  await userIndex.buildUserIndex(); // Prepare the users before start the server.
   app.listen(port, function fcnListen(er) {
     if (er) {
       client.close();

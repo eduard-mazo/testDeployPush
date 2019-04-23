@@ -16,21 +16,11 @@ module.exports = function user(userIndex) {
    */
   function login(req, res) {
     var userIdentifier = req.body.userIdentifier;
-    var userData = ((userIdentifier.match(/@/)) ? _getUserByEmail(userIdentifier) : _getUserByUsername(userIdentifier));
-    if (!userData) {
-      // userId = new ObjectID();
-      // userAccounts.insertOne(req.user.profile, {safe: true}).then(function fcnInserOneResponse(resp) {
-      //   var respElm = resp.ops[0];
-      //   respElm.aT = req.user.aT;
-      //   userIndexBy._id[respElm._id] = respElm;
-      //   userIndexBy.instaID[respElm.instaID] = respElm;
-      //   updateSession(respElm, req, res);
-      // }).catch(function fcnInsertOneError(er) {
-      //   console.log('db write error', er);
-      // });
-      res.status(401).send({url: '/'});
-    } else {
+    var userData = ((userIdentifier.match(/@/)) ? _getUserByEmail(userIdentifier) : _getUserByUsername(userIdentifier));;
+    if (userData && (userData.password == req.body.password)) {
       updateSession(userData, req, res);
+    } else {
+      res.status(401).send({url: '/'});
     }
   }
 
