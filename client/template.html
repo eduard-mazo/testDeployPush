@@ -17,7 +17,56 @@
     body {
       margin: 0px;
     }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 30px;
+      height: 17px;
+    }
 
+    .switch input[type='checkbox'] {
+      display:none;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
+      border-radius: 10px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 13px;
+      width: 13px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      -webkit-transition: .4s;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #ff9933;
+    }
+
+    input:focus + .slider {
+      box-shadow: 0 0 1px #ff9933;
+    }
+
+    input:checked + .slider:before {
+      -webkit-transform: translateX(13px);
+      -ms-transform: translateX(13px);
+      transform: translateX(13px);
+    }
     .icon {
       position: absolute;
     }
@@ -146,6 +195,11 @@
       border-color: #e17461 !important;
     }
 
+    .buttonContainer .allowNotify,
+    .buttonContainer .sendNotify {
+      display: none;
+    }
+
     .genericButton {
       width: 100%;
       padding: 10px;
@@ -193,20 +247,51 @@
       margin: 20px 0px 0px 0px;
     }
 
+    #pics .title {
+      text-align: center;
+      margin: 0px;
+    }
+
     #pics .buttonContainer {
       width: 240px;
       margin: 0px auto 10px auto;
     }
 
     #pics .band {
-      max-width: 1024px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
-      grid-gap: 20px;
+      max-width: 345px;
+      margin: 0px auto;
       padding: 0px;
-      justify-content: center;
+    }
+
+    #pics .band .label {
+      font-weight: bold;
+    }
+
+    #pics .band .device {
+      background-color: #efefef;
+      padding: 10px;
+      margin: 20px 0px;
+      border-radius: 5px;
+      display: flex;
       list-style: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #pics .band .device.current {
+      background-color: #dff0d8;
+    }
+
+    #pics .band .devicePic {
+      width: 75px;
+      height: 75px;
+      border-radius: 50%;
+    }
+
+    #pics .band .deviceDescr {
+      width: 220px;
+      padding: 0px 5px;
+      font-size: 12px;
     }
 
     #pics .card {
@@ -233,6 +318,15 @@
     #pics .card img {
       width: 320px;
       height: 320px;
+    }
+
+    #pics hr {
+      border: 0;
+      height: 0;
+      width: 345px;
+      margin: 10px auto;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     }
 
   </style>
@@ -271,9 +365,15 @@
           <button class="genericButton allowNotify">Allow notifications</button>  
         </div>
         <div class="buttonContainer">
-          <button class="genericButton sendNotify">Send notification</button>
+          <button class="genericButton sendNotify single">Send notification</button>
         </div>
-        <ul class="band">
+        <div class="buttonContainer">
+          <button class="genericButton sendNotify broadcast">Send broadcast</button>
+        </div>
+        <ul class="band mobile">
+        </ul>
+        <hr>
+        <ul class="band desktop">
         </ul>
       </section>
     </section>
@@ -284,15 +384,22 @@
   var cObj;
   var appSW = {};
   var _forceUpdate = true; // if force, reload when new service worker found rather then simply loading next browser load.  Use for bugfixes, important releases.
+  var userDeviceDescr;
   var userDeviceId;
-
+  var db;
   document.addEventListener('DOMContentLoaded', function kickOff() {
     var parserDevice = bowser.getParser(window.navigator.userAgent);
-    userDeviceId = parserDevice.getPlatformType() + '_' + parserDevice.getOSName() + '_' + parserDevice.getBrowserName();
+    userDeviceDescr = parserDevice.getPlatformType() + '_' + parserDevice.getOSName() + '_' + parserDevice.getBrowserName();
     if (parserDevice.getPlatformType() == 'mobile') {
       $('body').addClass('mobile');
     }
-    initPage();
+    if ((parserDevice.getBrowser().name == 'Internet Explorer') && (parserDevice.getBrowser().version <= 11)) {
+      alert('Use Chrome(best), Safari, and Firefox web browsers, please return with one of those for your best experience.');
+      return false;
+    } else {
+      initIndexedDB();
+      initPage();
+    }
   });
 
   /**
@@ -325,6 +432,7 @@
                   appSW.subscribeUser(SWReg);
                 } else {
                   appSW.subscription = sub;
+                  sendSubscriptionToServer(); // Only for test
                 }
               }).catch(function fcnCatchSubscription(err) {
                 console.log(err);
@@ -340,16 +448,37 @@
     }
     var cS = document.cookie.match(new RegExp('cs=([^;]+)'));
     cObj = cS && JSON.parse(atob(cS[1]));
+
+    setTimeout(function periodicCheckAuth() {
+      checkAuth();
+      setInterval(checkAuth, 5000);
+    }, (60 - new Date().getSeconds()) * 1000);
+
     if (cObj && cObj.ref) {
       $('.content').show();
       var $content = $('.content');
       $content.find('.userName').text(cObj.username);
+      updateNotifyUI();
       $content.find('.genericButton').on('click', function notificationActions(e) {
         var $this = $(e.target);
         if ($this.hasClass('allowNotify')) {
           setUpNotifications();
         } else {
-          requestPushNotification({body: 'Hello'});
+          var content = {
+            title: 'Reminder',
+            message: {
+              body: 'We have received a push message.',
+              badge: 'img/vpBlack.png',
+              icon: 'img/vp.png',
+              tag: userDeviceId,
+              data: {
+                doge: {
+                  wow: 'Some Wow data.'
+                } 
+              }
+            }
+          }
+          requestPushNotification($this[0].className.match(/broadcast|single/)[0], content);
         }
       })
 
@@ -384,6 +513,21 @@
       console.log('No internet Conection')
     }
     })
+    // (input[type=checkbox]) Update push device
+    $('.content .band').on('click', '.device input[type=radio]', function logOut() {
+      var $checkbox = $(this);
+      var $deviceContainer = $checkbox.parents('.device');
+      var deviceType = $deviceContainer.parent()[0].className.match(/desktop|mobile/)[0]
+      $.post('/user/devices/update', {deviceId: $deviceContainer.find('.deviceId').text(), deviceType})
+        .done(function done(resp){
+          console.log(resp.message);
+        })
+        .fail(function fail(resp){
+          console.log(resp);
+        })
+
+    });
+
     // (span.logOut) Clean the cookies.
     $('.content .userHeader').on('click', '.logOut', function logOut() {
       document.cookie = 'cs=;';
@@ -423,6 +567,7 @@
    * @returns {Undefined} _
    */
   function firstNotification() {
+    updateNotifyUI();
     var notifyOptions = {
       body: 'First notification!',
       vibrate: [100, 50, 100],
@@ -435,17 +580,90 @@
     appSW.subscribeUser(appSW.SWReg);
   }
 
-  /**
-   * Send the request for the push notification
-   * @function sendSubscriptionToServer
-   * @param {Object} notifyOptions Notification options
+  function updateNotifyUI() {
+    if (Notification.permission == 'default') {
+      $('.content').find('.allowNotify').show();
+      $('.content').find('.sendNotify').hide();
+    } else if (Notification.permission == 'granted') {
+      $('.content').find('.allowNotify').hide();
+      $('.content').find('.sendNotify').show();
+    }
+  }
+  /** Send a testing notification
+   * @function requestPushNotification
    * @returns {Undefined} _
    */
-  function sendSubscriptionToServer(subscription) {
-    console.log(subscription.toJSON());
-    $.post( '/user/subcription/subscribe', {subscription: subscription.toJSON(), deviceId: userDeviceId})
+  function requestPushNotification(type, content) {
+    $.post( '/user/sendPush/' + type, {content: content})
       .done(function success(resp) {
-        console.log('success: ', resp);
+        // console.log('success: ', resp);
+      })
+      .fail(function error(resp) {
+        // console.log('Error: ', resp);
+      })
+  }
+
+  /**
+   * Update the user subscration in the database.
+   * @function sendSubscriptionToServer
+   * @param {string} [deviceId] User deviceId
+   * @returns {Undefined} _
+   */
+  function sendSubscriptionToServer(deviceId) {
+    deviceId = deviceId || userDeviceId;
+    $.post( '/user/subcription/subscribe', {subscription: appSW.subscription.toJSON(), deviceDescr: userDeviceDescr, deviceId: deviceId})
+      .done(function success(resp) {
+        if (resp.message && db) {
+          if (userDeviceId) {
+            updateIndexedDB({id: 1, deviceId: resp.deviceId, state: resp.state});
+          } else {
+            addDeviceRecordToIndexedDB({id: 1, deviceId: resp.deviceId, state: resp.state});
+          }
+          userDeviceId = resp.deviceId;
+          console.log(resp.message);
+        }
+      })
+      .fail(function error(resp) {
+        console.log('Error: ', resp);
+      })
+  }
+
+  /**
+   * Update the user subscration in the database.
+   * @function getListOfDevices
+   * @param {string} [deviceId] User deviceId
+   * @returns {Undefined} _
+   */
+  function getListOfDevices(deviceId) {
+    deviceId = deviceId || userDeviceId;
+    $.post( '/user/devices/list')
+      .done(function success(resp) {
+        if (resp.devices) {
+          var deviceDomLi = ['','']; // [deskElms, mobileElms];
+          var descr;
+          for (var device in resp.devices) {
+            descr = resp.devices[device].descr.split('_');
+            deviceDomLi[((descr[0] == 'desktop') ? 1 : 0)] += '<li class="device' + ((userDeviceId == device) ? ' current' : '') + '">'
+                          +  '<div>'
+                            +  '<img class="devicePic" src="/img/' + descr[1] + '.png">'
+                          + '</div>'
+                          +  '<div class="deviceDescr">'
+                            +  '<span class="label">Device id:<br></span><span class="deviceId">' + device + '</span>'
+                            +  '<br><span class="label">Type:</span> ' + descr.join(' ')
+                            +  '<br><span class="label">State:</span> ' + resp.devices[device].state
+                          + '</div>'
+                          + '<div>'
+                            + '<input type="radio" name="' + descr[0] + '" ' + ((resp.devices[device].state == 'active') ? 'checked' : '') + '>'
+                          + '</div>'
+                        + '</li>'
+          }
+          if (deviceDomLi[0] != '') {
+            $('#pics .band.mobile').append('<h1 class="title">Mobile</h1>' + deviceDomLi[0]);
+          }
+          if (deviceDomLi[1] != '') {
+            $('#pics .band.desktop').append('<h1 class="title">Desktop</h1>' + deviceDomLi[1]);
+          }
+        }
       })
       .fail(function error(resp) {
         console.log('Error: ', resp);
@@ -482,9 +700,97 @@
     return outputArray;
   }
 
+  function addDeviceRecordToIndexedDB(record) {
+    var request = db.transaction(['userVp'], 'readwrite')
+      .objectStore('userVp')
+      .add(record);
+
+    request.onsuccess = function (event) {
+      console.log('The data has been written successfully');
+    };
+
+    request.onerror = function (event) {
+      console.log('The data has been written failed');
+    }
+  }
+
+  function getDeviceIdFromIndexedDB(id, callback) {
+    var transaction = db.transaction(['userVp']);
+    var objectStore = transaction.objectStore('userVp');
+    var request = objectStore.get(id);
+
+    request.onerror = function(event) {
+      console.log('Transaction failed');
+    };
+
+    request.onsuccess = function(event) {
+      $('body').removeClass('loadingInd');
+      if (request.result) {
+        userDeviceId = request.result.deviceId;
+      } else {
+        console.log('No data record');
+      }
+      ((typeof callback == 'function') && callback(userDeviceId));
+    };
+  }
+
+  function updateIndexedDB(record) {
+    var request = db.transaction(['userVp'], 'readwrite')
+      .objectStore('userVp')
+      .put(record);
+
+    request.onsuccess = function (event) {
+      console.log('The data has been updated successfully');
+    };
+
+    request.onerror = function (event) {
+      console.log('The data has been updated failed');
+    };
+  }
+
+  /**
+   * Check if current user has an auth token cookie, if fail, send to landing page.
+   * @function checkAuth
+   * @return {boolean} Auth
+   */
+  function checkAuth() {
+    var checkKp = document.cookie.match(new RegExp('cs=([^;]+)'));
+    if (!checkKp) {
+      console.log('no active session.');
+      return false;
+    }
+    return true;
+  }
+
+  function initIndexedDB() {
+    $('body').addClass('loadingInd');
+    // https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+    window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+    window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+    window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+
+    if (!window.indexedDB) {
+      window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+    } else {
+      var request = indexedDB.open('visiplannerPush', 1);
+      request.onupgradeneeded = function(event) {
+        db = event.target.result;
+        var objectStore = db.createObjectStore('userVp', { keyPath: 'id' });
+        objectStore.createIndex('deviceId', 'deviceId', { unique: true });
+      };
+      request.onsuccess = function(event) {
+        db = event.target.result;
+        if ((cObj && cObj.ref) && (Notification && (Notification.permission == 'granted'))) {
+          getDeviceIdFromIndexedDB(1, getListOfDevices);
+        }
+      };
+    }
+  }
+
   appSW.subscribeUser = function fcnSubscribeSW(SWReg) {
     if ((Notification.permission == 'granted') && SWReg) {
-      var serverNotificationPlublicKey = 'BDcRnzM70hstg-ONNzzQTsV5wDlat0IcLpZ3HN4QgkECNjK7vsLOnZe-xgKUL54VIphnrjGnVsQu4DZdO3PfSQM';
+      // var serverNotificationPlublicKey = 'BDcRnzM70hstg-ONNzzQTsV5wDlat0IcLpZ3HN4QgkECNjK7vsLOnZe-xgKUL54VIphnrjGnVsQu4DZdO3PfSQM'; // FIREBASE VAID
+      var serverNotificationPlublicKey = 'BIg1bDl3q9tc3wUvx3z1XYjz8Kg6SlJiLN_zo2iyl6Wc0CHzMKo2JxtSDGdheYiFugvfjZ2P0ltQT9-M8oWgMZc'; // WEB-PUSH VAID
       var applicationServerKey = urlB64ToUint8Array(serverNotificationPlublicKey);
       SWReg.pushManager && SWReg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -492,8 +798,11 @@
       })
         .then(function fcnSubscription(subscription) {
           appSW.subscription = subscription;
-          sendSubscriptionToServer(subscription)
-          console.log('User is subscribed:', subscription);
+          if ($('body').hasClass('loadingInd') || !userDeviceId) {
+            getDeviceIdFromIndexedDB(1, sendSubscriptionToServer);
+          } else {
+            sendSubscriptionToServer(userDeviceId);
+          }
         })
         .catch(function fcnError(err) {
           if (Notification.permission == 'denied') {
@@ -507,9 +816,9 @@
 
   appSW._updateReady = function fcnUpdateReady(worker) {
     if (_forceUpdate) {
-      // worker.postMessage({action: 'deleteDynamic'}); // Good idea?
       worker.postMessage({action: 'skipWaiting'});
     }
+    console.log('UpdateReady')
   };
 
   appSW._trackInstalling = function fcnInstalling(worker) {
