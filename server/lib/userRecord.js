@@ -1,9 +1,5 @@
 'use strict';
-<<<<<<< HEAD
 var utils = require('../lib/utils');
-=======
-
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
 module.exports = function userIndex(db, ObjectID) {
   var self = {};
   var userAccounts = db.collection('userAccounts');
@@ -23,28 +19,18 @@ module.exports = function userIndex(db, ObjectID) {
         userIndexBy = {
           _id: {},
           username: {},
-<<<<<<< HEAD
           email: {},
           refId: {}
-=======
-          email: {}
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
         };
         userAccounts.find({}).toArray(function fcnBuiluserIndexByAccounts(err, res) {
           if (err) {
             reject(err);
           } else {
             res.forEach(function fcnRes(elm) {
-<<<<<<< HEAD
               userIndexBy._id[elm._id] = elm;
               userIndexBy.username[elm.username] = elm;
               userIndexBy.email[elm.email] = elm;
               userIndexBy.refId[utils.obfuscate('1', 'u_' + elm._id + '_' + elm.refLastUpdated.toString(36))] = elm;
-=======
-              userIndexBy._id[new ObjectID(elm._id)] = elm;
-              userIndexBy.username[elm.username] = elm;
-              userIndexBy.email[elm.email] = elm;
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
             });
             console.log('User index ready: ', userIndexBy);
             resolve(true);
@@ -58,7 +44,6 @@ module.exports = function userIndex(db, ObjectID) {
 
   self.existID = existID;
   /**
-<<<<<<< HEAD
    * Check if the request user in the cookie exist in our database
    * @function existID
    * @param {string} refId _app_ user referenceId
@@ -66,15 +51,6 @@ module.exports = function userIndex(db, ObjectID) {
    */
   function existID(refId) {
     return (userIndexBy.refId[refId] && userIndexBy.refId[refId] ? true : false);
-=======
-   * Check if the request user ID exist in our database
-   * @function existID
-   * @param {string} id _app_ user ID
-   * @return {boolean} true if exist false in otherwise
-   */
-  function existID(id) {
-    return (userIndexBy._id[id] && userIndexBy._id[id] ? true : false);
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
   }
 
   self.getUserByUsername = getUserByUsername;
@@ -99,7 +75,6 @@ module.exports = function userIndex(db, ObjectID) {
     return (((typeof email == 'string') && userIndexBy.email[email]) ? userIndexBy.email[email] : null);
   }
 
-<<<<<<< HEAD
   self.getUserByRefId = getUserByRefId;
   /**
    * Get the user _app_ data using the _email_
@@ -115,12 +90,6 @@ module.exports = function userIndex(db, ObjectID) {
   /**
    * @function getUserDeviceIdByEndpoint
    * @param {String} id _app_ user Id
-=======
-  self.getUserDeviceIdByEndpoint = getUserDeviceIdByEndpoint;
-  /**
-   * @function getUserDeviceIdByEndpoint
-   * @param {String} id _app_ user ID.
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
    * @param {String} endpoint _app_ subscription endpoint
    * @return {Object} user device id
    */
@@ -151,7 +120,6 @@ module.exports = function userIndex(db, ObjectID) {
     userIndexBy._id[id].devices[deviceId] = device[deviceId];
   }
 
-<<<<<<< HEAD
   self.createUserRecord = createUserRecord;
   /**
    * @function createUserRecord
@@ -182,12 +150,6 @@ module.exports = function userIndex(db, ObjectID) {
   /**
    * @function getAllUserDevices
    * @param {String} id _app_ user Id.
-=======
-  self.getAllUserDevices = getAllUserDevices;
-  /**
-   * @function getAllUserDevices
-   * @param {String} id _app_ user ID.
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
    * @return {Object} user devices
    */
   function getAllUserDevices(id) {
@@ -235,11 +197,7 @@ module.exports = function userIndex(db, ObjectID) {
   self.getDeviceById = getDeviceById;
   /**
    * @function getDeviceById
-<<<<<<< HEAD
    * @param {String} id _app_ user Id
-=======
-   * @param {String} id _app_ user id.
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
    * @param {String} deviceId _app_ user deviceId.
    * @return {Object} user device
    */
@@ -279,17 +237,12 @@ module.exports = function userIndex(db, ObjectID) {
         keys: newSubscription.keys
       });
 
-<<<<<<< HEAD
     userAccounts.updateOne({id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: dataToUpdate}}})
-=======
-    userAccounts.updateOne({_id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: dataToUpdate}}})
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
       .catch(function recoverOldData() {
         userIndexBy._id[id].devices[userDeviceId] = oldDeviceData;
         console.log('Error while writing in DB new enpoint for: ', userDeviceId);
       });
   }
-<<<<<<< HEAD
 
   self.updateUserPassword = updateUserPassword;
   /**
@@ -313,7 +266,5 @@ module.exports = function userIndex(db, ObjectID) {
         ((typeof callback == 'function' && callback(true)));
       });
   }
-=======
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
   return self;
 };
