@@ -773,7 +773,34 @@
   function requestPushNotification(type, content) {
     $.post( '/user/sendPush/' + type, {content: content})
       .done(function success(resp) {
-        console.log('success: ', resp);
+        if (resp.message && db) {
+          if (userDeviceId) {
+            updateIndexedDB({id: 1, deviceId: resp.deviceId, state: resp.state});
+          } else {
+            addDeviceRecordToIndexedDB({id: 1, deviceId: resp.deviceId, state: resp.state});
+          }
+          userDeviceId = resp.deviceId;
+          console.log(resp.message);
+        }
+      })
+      .fail(function error(resp) {
+        console.log('Error: ', resp);
+      })
+  }
+
+  /**
+   * Fetch all the user devices and render it
+   * @function getListOfDevices
+   * @param {string} [deviceId] User deviceId
+   * @returns {undefined}
+   */
+  function getListOfDevices(deviceId) {
+    deviceId = deviceId || userDeviceId;
+    $.post( '/user/devices/list')
+      .done(function success(resp) {
+        if (resp.devices) {
+          updateDeviceListUI(resp.devices);
+        }
       })
       .fail(function error(resp) {
         console.log('Error: ', resp);

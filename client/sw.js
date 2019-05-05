@@ -45,7 +45,6 @@ self.addEventListener('notificationclick', function fcnClickNotify(event) {
 
 self.addEventListener('push', function fcnPush(event) {
   var content = JSON.parse(event.data.text());
-  console.log(content);
   event.waitUntil(
     readIndexedDB(1, function getDevice(result) {
       if (result.deviceId.split('_')[1] == content.message.tag.split('_')[1]) {

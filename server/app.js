@@ -3,7 +3,7 @@
 var MongodbMemoryServer = require('mongodb-memory-server');
 var {MongoClient, ObjectID} = require('mongodb');
 var path = require('path');
-var port = (process.argv[2] && process.argv[2].substr(process.argv[2].indexOf('=') + 1)) || 8300;
+var port = process.env.PORT || (process.argv[2] && process.argv[2].substr(process.argv[2].indexOf('=') + 1)) || 8300;
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieSession = require('cookie-session');
@@ -48,11 +48,10 @@ var creatingCollections = require('./lib/userMockData');
   });
 
   app.post('/user/login', userRoute.login);
-  app.post('/user/changePassword', userRoute.checkAuth, userRoute.changePassword);
   app.post('/user/subcription/:type', userRoute.checkAuth, pushMngrRoute.subscribe);
   app.post('/user/sendPush/:type', userRoute.checkAuth, pushMngrRoute.sendPushNotification);
   app.post('/user/devices/:type', userRoute.checkAuth, pushMngrRoute.devices);
-  // app.post('/user/expireUserSessions', routesUser.checkAuth, routesUser.expireUserSessions);
+
   app.post('/sw/pushDelivery', pushMngrRoute.clientPushConfirmation);
 
   await userIndex.buildUserIndex(); // Prepare the users before start the server.
