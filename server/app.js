@@ -48,6 +48,7 @@ var creatingCollections = require('./lib/userMockData');
   });
 
   app.post('/user/login', userRoute.login);
+  app.post('/user/changePassword', userRoute.checkAuth, userRoute.changePassword);
   app.post('/user/subcription/:type', userRoute.checkAuth, pushMngrRoute.subscribe);
   app.post('/user/sendPush/:type', userRoute.checkAuth, pushMngrRoute.sendPushNotification);
   app.post('/user/devices/:type', userRoute.checkAuth, pushMngrRoute.devices);
