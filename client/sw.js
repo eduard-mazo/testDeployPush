@@ -45,12 +45,17 @@ self.addEventListener('notificationclick', function fcnClickNotify(event) {
 
 self.addEventListener('push', function fcnPush(event) {
   var content = JSON.parse(event.data.text());
+  console.log(content);
   event.waitUntil(
     readIndexedDB(1, function getDevice(result) {
       if (result.deviceId.split('_')[1] == content.message.tag.split('_')[1]) {
         clients.matchAll()
-          .then(function fcnMatch() {
-            if (content.type == 'push') {
+          .then(function fcnMatch(client) {
+            if (content.title == 'closeSession') {
+              console.log(client);
+              client[0].postMessage(content.title);
+              return false;
+            } if (content.type == 'push') {
               return self.registration.showNotification(content.title, content.message);
             }
             console.log('This is a local Notification');

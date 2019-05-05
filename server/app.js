@@ -12,12 +12,13 @@ var creatingCollections = require('./lib/userMockData');
 
 
 (async function setupDatabase(webserverCallback) {
+  // var dbUri = 'mongodb+srv://EASC_01:0KzQlxBvEk8yDmLV@thundersandbox-v0ydj.mongodb.net/test?retryWrites=true';
   var mongod = new MongodbMemoryServer.default({});
   var dbUri = await mongod.getConnectionString();
   var dbName = await mongod.getDbName();
   var connection = await MongoClient.connect(dbUri, {keepAlive: true, connectTimeoutMS: 30000, useNewUrlParser: true});
   try {
-    var db = await connection.db(dbName);
+    var db = await connection.db(dbName || 'test');
     await creatingCollections(ObjectID, db);
     webserverCallback(db);
   } catch (error) {
@@ -47,10 +48,11 @@ var creatingCollections = require('./lib/userMockData');
   });
 
   app.post('/user/login', userRoute.login);
+  app.post('/user/changePassword', userRoute.checkAuth, userRoute.changePassword);
   app.post('/user/subcription/:type', userRoute.checkAuth, pushMngrRoute.subscribe);
   app.post('/user/sendPush/:type', userRoute.checkAuth, pushMngrRoute.sendPushNotification);
   app.post('/user/devices/:type', userRoute.checkAuth, pushMngrRoute.devices);
-
+  // app.post('/user/expireUserSessions', routesUser.checkAuth, routesUser.expireUserSessions);
   app.post('/sw/pushDelivery', pushMngrRoute.clientPushConfirmation);
 
   await userIndex.buildUserIndex(); // Prepare the users before start the server.

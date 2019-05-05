@@ -6,8 +6,9 @@ async function creatingCollections(ObjectID, db) {
       {
         _id: new ObjectID('5cac9dfe1cd420104c1f2df3'),
         username: 'tester69',
+        refLastUpdated: 1556134962545,
         email: 'tester69@techtransit.com',
-        password: '123456',
+        password: '7c4a8d09ca3762af61e59520943dc26494f8941b',
         devices: {}
       }
     ]);

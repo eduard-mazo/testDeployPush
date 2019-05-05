@@ -1,5 +1,5 @@
 'use strict';
-
+var utils = require('../lib/utils');
 module.exports = function userIndex(db, ObjectID) {
   var self = {};
   var userAccounts = db.collection('userAccounts');
@@ -19,16 +19,18 @@ module.exports = function userIndex(db, ObjectID) {
         userIndexBy = {
           _id: {},
           username: {},
-          email: {}
+          email: {},
+          refId: {}
         };
         userAccounts.find({}).toArray(function fcnBuiluserIndexByAccounts(err, res) {
           if (err) {
             reject(err);
           } else {
             res.forEach(function fcnRes(elm) {
-              userIndexBy._id[new ObjectID(elm._id)] = elm;
+              userIndexBy._id[elm._id] = elm;
               userIndexBy.username[elm.username] = elm;
               userIndexBy.email[elm.email] = elm;
+              userIndexBy.refId[utils.obfuscate('1', 'u_' + elm._id + '_' + elm.refLastUpdated.toString(36))] = elm;
             });
             console.log('User index ready: ', userIndexBy);
             resolve(true);
@@ -42,13 +44,13 @@ module.exports = function userIndex(db, ObjectID) {
 
   self.existID = existID;
   /**
-   * Check if the request user ID exist in our database
+   * Check if the request user in the cookie exist in our database
    * @function existID
-   * @param {string} id _app_ user ID
+   * @param {string} refId _app_ user referenceId
    * @return {boolean} true if exist false in otherwise
    */
-  function existID(id) {
-    return (userIndexBy._id[id] && userIndexBy._id[id] ? true : false);
+  function existID(refId) {
+    return (userIndexBy.refId[refId] && userIndexBy.refId[refId] ? true : false);
   }
 
   self.getUserByUsername = getUserByUsername;
@@ -73,15 +75,26 @@ module.exports = function userIndex(db, ObjectID) {
     return (((typeof email == 'string') && userIndexBy.email[email]) ? userIndexBy.email[email] : null);
   }
 
+  self.getUserByRefId = getUserByRefId;
+  /**
+   * Get the user _app_ data using the _email_
+   * @function getUserByRefId
+   * @param {string} refId _app_ user refId
+   * @return {String | null} _app_ userProfile || null if not exist
+   */
+  function getUserByRefId(refId) {
+    return (((typeof refId == 'string') && userIndexBy.refId[refId]) ? userIndexBy.refId[refId] : null);
+  }
+
   self.getUserDeviceIdByEndpoint = getUserDeviceIdByEndpoint;
   /**
    * @function getUserDeviceIdByEndpoint
-   * @param {String} id _app_ user ID.
+   * @param {String} id _app_ user Id
    * @param {String} endpoint _app_ subscription endpoint
    * @return {Object} user device id
    */
   function getUserDeviceIdByEndpoint(id, endpoint) {
-    if ((typeof id == 'string') && (typeof id == 'string')) {
+    if ((typeof id == 'string') && (typeof endpoint == 'string')) {
       var user = userIndexBy._id[id];
       for (var deviceId in user.devices) {
         if (user.devices[deviceId].endpoints.includes(endpoint)) {
@@ -107,30 +120,55 @@ module.exports = function userIndex(db, ObjectID) {
     userIndexBy._id[id].devices[deviceId] = device[deviceId];
   }
 
+  self.createUserRecord = createUserRecord;
+  /**
+   * @function createUserRecord
+   * @param {String} body incoming new _app_ user data
+   * @param {String} callback pass the new as argument to the callback
+   * @return {undefined}
+   */
+  function createUserRecord(body, callback) {
+    var id = new ObjectID();
+    var newUser = {
+      _id: id,
+      username: body.userIdentifier,
+      refLastUpdated: (new Date()).getTime(),
+      email: (body.email ? body.email : ((new Date()).getTime()).toString(36) + '@temp.com'),
+      password: utils.genCryptoHashed(body.password),
+      devices: {}
+    };
+
+    userIndexBy._id[id] = newUser;
+    userIndexBy.username[newUser.username] = newUser;
+    userIndexBy.email[newUser.email] = newUser;
+    userIndexBy.refId[utils.obfuscate('1', 'u_' + id + '_' + newUser.refLastUpdated.toString(36))] = newUser;
+    userAccounts.insertOne(newUser);
+    ((typeof callback == 'function') && callback(newUser));
+  }
+
   self.getAllUserDevices = getAllUserDevices;
   /**
    * @function getAllUserDevices
-   * @param {String} id _app_ user ID.
+   * @param {String} id _app_ user Id.
    * @return {Object} user devices
    */
   function getAllUserDevices(id) {
     return (((typeof id == 'string') && userIndexBy._id[id] && userIndexBy._id[id].devices) ? userIndexBy._id[id].devices : null);
   }
 
-  self.updateDevicesType = updateDevicesType;
+  self.updateDevicesState = updateDevicesState;
   /**
-   * @function updateDevicesType
+   * @function updateDevicesState
    * @param {String} id _app_ user Id
    * @param {String} deviceId _app_ user device Id to update
    * @param {String} deviceType User device type (mobile or desktop)
    * @return {undefined}
    */
-  function updateDevicesType(id, deviceId, deviceType) {
+  function updateDevicesState(id, deviceId) {
     var matchType;
     if ((typeof id == 'string') && userIndexBy._id[id]) {
       for (var device in userIndexBy._id[id].devices) {
-        matchType = ((userIndexBy._id[id].devices[device].descr).match(deviceType) ? true : false);
-        if (matchType && (userIndexBy._id[id].devices[device].state != 'disable')) {
+        if (userIndexBy._id[id].devices[device].state != 'disable') {
           if (device == deviceId) {
             userIndexBy._id[id].devices[device].state = 'active';
           } else if (matchType) {
@@ -159,7 +197,7 @@ module.exports = function userIndex(db, ObjectID) {
   self.getDeviceById = getDeviceById;
   /**
    * @function getDeviceById
-   * @param {String} id _app_ user id.
+   * @param {String} id _app_ user Id
    * @param {String} deviceId _app_ user deviceId.
    * @return {Object} user device
    */
@@ -167,17 +205,16 @@ module.exports = function userIndex(db, ObjectID) {
     return ((userIndexBy._id[id] && userIndexBy._id[id].devices && userIndexBy._id[id].devices[deviceId]) ? userIndexBy._id[id].devices[deviceId] : null);
   }
 
-  self.updateUserDeviceState = updateUserDeviceState;
+  self.disableUserDevice = disableUserDevice;
   /**
    * disable all the bad endpoints.
-   * @function updateUserDeviceState
+   * @function disableUserDevice
    * @param {String} deviceId _app_ user device is
-   * @param {String} newState _app_ new user device state
    * @return {undefined}
    */
-  function updateUserDeviceState(deviceId, newState) {
+  function disableUserDevice(deviceId) {
     var userId = deviceId.split('_')[1];
-    var dataToUpdate = Object.assign(userIndexBy._id[userId].devices[deviceId], {state: newState, LUT: (new Date()).getTime()});
+    var dataToUpdate = Object.assign(userIndexBy._id[userId].devices[deviceId], {state: 'disable', LUT: (new Date()).getTime()});
     userAccounts.updateOne({_id: new ObjectID(userId)}, {$set: {devices: {[deviceId]: dataToUpdate}}});
     console.log('User device: ' + deviceId + ' was disable');
   }
@@ -200,10 +237,33 @@ module.exports = function userIndex(db, ObjectID) {
         keys: newSubscription.keys
       });
 
-    userAccounts.updateOne({_id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: dataToUpdate}}})
+    userAccounts.updateOne({id: new ObjectID(id)}, {$set: {devices: {[userDeviceId]: dataToUpdate}}})
       .catch(function recoverOldData() {
         userIndexBy._id[id].devices[userDeviceId] = oldDeviceData;
         console.log('Error while writing in DB new enpoint for: ', userDeviceId);
+      });
+  }
+
+  self.updateUserPassword = updateUserPassword;
+  /**
+   * @function updateUserPassword
+   * @param {string} id user _app_ id.
+   * @param {String} newPassword new user _app_ password
+   * @param {String} callback on success or error callback(err).
+   * @return {undefined}
+   */
+  function updateUserPassword(id, newPassword, callback) {
+    var userData = userIndexBy._id[id];
+    delete userIndexBy.refId[utils.obfuscate('1', 'u_' + id + '_' + userData.refLastUpdated.toString(36))];
+    var dataToUpdate = Object.assign(userData, {refLastUpdated: (new Date()).getTime(), password: newPassword});
+    userIndexBy.refId[utils.obfuscate('1', 'u_' + id + '_' + dataToUpdate.refLastUpdated.toString(36))] = dataToUpdate;
+    userAccounts.updateOne({id: new ObjectID(id)}, {$set: {password: dataToUpdate.password, refLastUpdated: dataToUpdate.refLastUpdated}})
+      .then(function success() {
+        ((typeof callback == 'function' && callback(false, dataToUpdate)));
+      })
+      .catch(function recoverOldData() {
+        console.log('Error while writing in DB new enpoint for: ', id);
+        ((typeof callback == 'function' && callback(true)));
       });
   }
   return self;

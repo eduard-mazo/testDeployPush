@@ -4,6 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.css'>
   <link rel='stylesheet' href='css/icoMoonFont.css'>
   <style type="text/css">
     html {
@@ -129,10 +130,15 @@
       margin: 0px 0px 20px 0px;
     
     }
+
     .modal {
       display: none;
       width: 100%;
       height: 100%;
+    }
+
+    .modal .container {
+      display: none;
     }
 
     .modal .modalHeader .title {
@@ -200,6 +206,7 @@
       border-color: #e17461 !important;
     }
 
+    .buttonContainer.notifyCheck,
     .buttonContainer .allowNotify,
     .buttonContainer .sendNotify {
       display: none;
@@ -267,12 +274,6 @@
       max-width: 345px;
       margin: 0px auto;
       padding: 0px;
-    }
-
-    #pics .band.mobile {
-      border: 0;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #ccc;
     }
 
     #pics .band .label {
@@ -346,6 +347,38 @@
       background-color: white;
       padding: 15px;
     }
+
+    .genericButton.waiting::after {
+      content: ' ';
+      display: inline-block;
+      width: 29px;
+      height: 29px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      -webkit-animation: spin 1s ease-in-out infinite;
+    }
+
+    .genericButton.waiting {
+      padding: 7px 10px;
+    }
+
+    @keyframes spin {
+      to { -webkit-transform: rotate(360deg); }
+    }
+    @-webkit-keyframes spin {
+      to { -webkit-transform: rotate(360deg); }
+    }
+
+    .genericButton.waiting span {
+      display: none;
+    }
+
+    .notificationContainer .promptUser,
+    .notificationContainer .alert {
+      display: none;
+    }
     .title {
       text-align: center;
     }
@@ -353,9 +386,14 @@
       display: inline-block;
       width: 100px;
     }
-    .notificationContainer .buttonContainer {
+    .notificationContainer .promptUser .buttonContainer {
       text-align: right;
     }
+
+    .notificationContainer .alert .buttonContainer {
+      text-align: center;
+    }
+
   </style>
   <title>Push Manager</title>
 </head>
@@ -363,11 +401,20 @@
   <main class="pageWrapper">
     <section class="notificationModal">
       <div class="notificationContainer">
-        <h1 class="title">Push Notifications</h1>
-        <p>We want to send you some push notifications</p>
-        <div class="buttonContainer">
-          <button class="genericButton notifyLater">Later</button>
-          <button class="genericButton allowNotify">Allow</button>
+        <div class="promptUser">
+            <h1 class="title">Push Notifications</h1>
+            <p>We want to send you some push notifications</p>
+            <div class="buttonContainer">
+              <button class="genericButton notifyLater">Later</button>
+              <button class="genericButton allowNotify">Allow</button>
+            </div>
+        </div>
+        <div class="alert">
+            <h1 class="title">Not found</h1>
+            <p>That device is not longer abeable, please choose another</p>
+            <div class="buttonContainer">
+              <button class="genericButton notifyOk">Ok</button>
+            </div>
         </div>
       </div>
     </section>
@@ -387,7 +434,27 @@
             <span class="icon hideShow hide"></span>
           </div>
           <div>
-            <button type="submit" class="genericButton signInUp"><span>Login</span></button>
+            <button type="submit" class="genericButton"><span>Login</span></button>
+          </div>
+        </form>
+      </section><!-- end section.login -->
+      <section class="container password">
+        <div class="modalHeader">
+          <h2 class="title">Change Password</h2>
+        </div>
+        <form class="submitForm changePassword">
+          <div class="fieldRow">
+            <span class="icon password"></span>
+            <input class="rowInput" type="password" name="oldPassword" placeholder="Old password" autocorrect="off" autocapitalize="off" required/>
+            <span class="icon hideShow hide"></span>
+          </div>
+          <div class="fieldRow">
+            <span class="icon password"></span>
+            <input class="rowInput" type="password" name="newPassword" placeholder="New password" autocorrect="off" autocapitalize="off" required/>
+            <span class="icon hideShow hide"></span>
+          </div>
+          <div>
+            <button type="submit" class="genericButton submitPassword"><span>Change</span></button>
           </div>
         </form>
       </section><!-- end section.login -->
@@ -399,18 +466,28 @@
       </header>
       <section id="pics">
         <div class="buttonContainer">
-          <button class="genericButton notifyModal">Allow notifications</button>  
+          <button class="genericButton updatePassword"><span>Change password</span></button>  
         </div>
         <div class="buttonContainer">
-          <button class="genericButton sendNotify single">Send notification</button>
+          <button class="genericButton notifyModal"><span>Allow notifications</span></button>  
         </div>
         <div class="buttonContainer">
-          <button class="genericButton sendNotify broadcast">Send broadcast</button>
+          <button class="genericButton sendNotify single"><span>Send notification</span></button>
         </div>
-        <ul class="band mobile">
+        <div class="buttonContainer">
+          <button class="genericButton sendNotify broadcast"><span>Send broadcast</span></button>
+        </div>
+        <ul class="band">
         </ul>
-        <ul class="band desktop">
-        </ul>
+        <div class="buttonContainer notifyCheck">
+          <button class="genericButton notifyMarkActive"><span>Mark as active</span></button>
+        </div>
+        <div class="buttonContainer notifyCheck">
+          <button class="genericButton notifyDisableSingle"><span>Disable device</span></button>
+        </div>
+        <div class="buttonContainer notifyCheck">
+          <button class="genericButton notifyDisableAll"><span>Disable all</span></button>
+        </div>
       </section>
     </section>
   </main>
@@ -420,6 +497,7 @@
   var cObj;
   var appSW = {};
   var _forceUpdate = true; // if force, reload when new service worker found rather then simply loading next browser load.  Use for bugfixes, important releases.
+  var checkInter;
   var userDeviceDescr;
   var userDeviceId;
   var db;
@@ -447,68 +525,116 @@
    */
   function initPage() {
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function fcnPageLoad() {
-        navigator.serviceWorker.register('/sw.js')
-          .then(function fcnRegisterSW(reg) {
-            // Ensure refresh is only called once.
-            // This works around a bug in 'force update on reload'.
-            var refreshing;
-            navigator.serviceWorker.addEventListener('controllerchange', function fcnBindControllerChange() {
-              console.log('CONTROLLER CHANGE');
-              if (refreshing) return;
-              window.location.reload();
-              refreshing = true;
-            });
-            reg.addEventListener('updatefound', function fcnBindUpdateFound() {
-              console.log('GOT update');
-              appSW._trackInstalling(reg.installing);
-            });
-            navigator.serviceWorker.ready.then(function fcnSWReady(SWReg) {
-              console.log('Service Worker Registered');
-              appSW.SWReg = SWReg;
-              SWReg.pushManager && SWReg.pushManager.getSubscription().then(function fcnPushSubscription(sub) {
-                if (sub === null) {
-                  appSW.subscribeUser(SWReg);
-                } else {
-                  appSW.subscription = sub;
-                  sendSubscriptionToServer(); // Only for test
-                }
-              }).catch(function fcnCatchSubscription(err) {
-                console.log(err);
-              });
-            });
-          })
-          .catch(function fcnCatchSWReady(err) {
-            console.log(err);
+      navigator.serviceWorker.register('/sw.js')
+        .then(function fcnRegisterSW(reg) {
+          navigator.serviceWorker.addEventListener('message', function(event){
+            if (event.data == 'closeSession') {
+              logOut();
+            }
           });
-      });
+          // Ensure refresh is only called once.
+          // This works around a bug in 'force update on reload'.
+          var refreshing;
+          navigator.serviceWorker.addEventListener('controllerchange', function fcnBindControllerChange() {
+            console.log('CONTROLLER CHANGE');
+            if (refreshing) return;
+            window.location.reload();
+            refreshing = true;
+          });
+          reg.addEventListener('updatefound', function fcnBindUpdateFound() {
+            console.log('GOT update');
+            appSW._trackInstalling(reg.installing);
+          });
+          navigator.serviceWorker.ready.then(function fcnSWReady(SWReg) {
+            console.log('Service Worker Registered');
+            appSW.SWReg = SWReg;
+            SWReg.pushManager && SWReg.pushManager.getSubscription().then(function fcnPushSubscription(sub) {
+              if (sub === null) {
+                appSW.subscribeUser(SWReg);
+              } else {
+                appSW.subscription = sub;
+                sendSubscriptionToServer(); // Only for test
+              }
+            }).catch(function fcnCatchSubscription(err) {
+              console.log(err);
+            });
+          });
+        })
+        .catch(function fcnCatchSWReady(err) {
+          console.log(err);
+        });
     } else {
       console.warn('Push messaging is not supported');
     }
     var cS = document.cookie.match(new RegExp('cs=([^;]+)'));
     cObj = cS && JSON.parse(atob(cS[1]));
 
-    setTimeout(function periodicCheckAuth() {
-      checkAuth();
-      setInterval(checkAuth, 5000);
-    }, (60 - new Date().getSeconds()) * 1000);
-
     if (cObj && cObj.ref) {
+      setTimeout(function periodicCheckAuth() {
+        checkAuth();
+        checkInter = setInterval(checkAuth, 5000);
+      }, (60 - new Date().getSeconds()) * 1000);
       $('.content').show();
       var $pageWrapper = $('.pageWrapper');
       $pageWrapper.find('.userName').text(cObj.username);
       updateNotifyUI();
-      $pageWrapper.find('.genericButton').on('click', function notificationActions(e) {
-        var $this = $(e.target);
+
+      $pageWrapper.on('click', '.genericButton', function notificationActions(e) {
+        var $this = $(this);
         if ($this.hasClass('allowNotify')) {
+          $pageWrapper.find('.promptUser').removeClass('active');
           $pageWrapper.find('.notificationModal').removeClass('active');
           setUpNotifications();
         } else if ($this.hasClass('notifyModal')) {
           $pageWrapper.find('.notificationModal').addClass('active');
+          $pageWrapper.find('.promptUser').addClass('active');
         } else if ($this.hasClass('notifyLater')) {
+          $pageWrapper.find('.promptUser').removeClass('active');
           $pageWrapper.find('.notificationModal').removeClass('active');
           console.log('Try it later!');
-        }else {
+        } else if ($this.hasClass('notifyOk')) {
+          $pageWrapper.find('.alert').removeClass('active');
+          $pageWrapper.find('.notificationModal').removeClass('active');
+        } else if ($this.hasClass('updatePassword')) {
+          $('.content').hide();
+          $('.modal').show();
+          $('.modal .password').show();
+        } else if ($this.hasClass('notifyDisableSingle') || $this.hasClass('notifyDisableAll')) {
+          var type = $this.hasClass('notifyDisableSingle') ? 'disableSingle' : 'disableAll';
+          $(this).addClass('waiting');
+          var data = {};
+          if (type == 'disableSingle') {
+            data = {deviceId: $pageWrapper.find('.band .push .deviceId').text()};
+          }
+          $.post('/user/devices/' + type, data)
+            .done(function done(resp) {
+              console.log(resp.message);
+              $(this).parent().removeClass('active');
+              $(this).removeClass('waiting');
+            })
+            .fail(function fail(resp){
+              console.log(resp.responseJSON.message);
+            })
+        } else if ($this.hasClass('submitPassword')) {
+          return true; // Trigger the submit action (let pass)
+        } else if ($this.hasClass('notifyMarkActive')) {
+          $('#pics .notifyMarkActive').addClass('waiting');
+          $.post('/user/devices/update', {deviceId: $pageWrapper.find('.band .push .deviceId').text()})
+            .done(function done(resp){
+              console.log(resp.message);
+              $('#pics .notifyCheck').removeClass('active');
+              $('#pics .notifyMarkActive').removeClass('waiting');
+            })
+            .fail(function fail(resp){
+              console.log(resp.responseJSON.message);
+              $('#pics .notifyMarkActive').removeClass('waiting');
+              if (resp.responseJSON.devices) {
+                $('.pageWrapper .alert').addClass('active');
+                $('.pageWrapper .notificationModal').addClass('active');
+                updateDeviceListUI(resp.responseJSON.devices);
+              }
+            })
+        } else {
           var content = {
             title: 'Reminder',
             message: {
@@ -529,6 +655,7 @@
 
     } else {
       $('.modal').show();
+      $('.modal .login').show();
     }
 
     // (div.vendorRow) Create the providers authUrl.
@@ -543,6 +670,9 @@
       if ($this.hasClass('userSignIn')) {
         callback = userLogin;
         postUrl = '/user/login';
+      } else if ($this.hasClass('changePassword')) {
+        callback = changePassword;
+        postUrl = '/user/changePassword';
       }
       $.ajax({
         type: 'POST',
@@ -561,24 +691,18 @@
     })
 
     // (input[type=checkbox]) Update push device
-    $('.content .band').on('click', '.device input[type=radio]', function logOut() {
+    $('.content .band').on('change', '.device input[type=radio]', function changeDeviceStatus() {
+      $('.band .device.push').removeClass('push').find('.state').text('abeable');
       var $checkbox = $(this);
       var $deviceContainer = $checkbox.parents('.device');
-      var deviceType = $deviceContainer.parent()[0].className.match(/desktop|mobile/)[0]
-      $.post('/user/devices/update', {deviceId: $deviceContainer.find('.deviceId').text(), deviceType})
-        .done(function done(resp){
-          console.log(resp.message);
-        })
-        .fail(function fail(resp){
-          console.log(resp);
-        })
-
+      $deviceContainer.addClass('push');
+      $deviceContainer.find('.state').text('active');
+      $('#pics .notifyCheck').addClass('active');
     });
 
     // (span.logOut) Clean the cookies.
-    $('.content .userHeader').on('click', '.logOut', function logOut() {
-      document.cookie = 'cs=;';
-      window.location.href = '/';
+    $('.content .userHeader').on('click', '.logOut', function endSession() {
+      logOut();
     });
   }
 
@@ -649,10 +773,10 @@
   function requestPushNotification(type, content) {
     $.post( '/user/sendPush/' + type, {content: content})
       .done(function success(resp) {
-        // console.log('success: ', resp);
+        console.log('success: ', resp);
       })
       .fail(function error(resp) {
-        // console.log('Error: ', resp);
+        console.log('Error: ', resp);
       })
   }
 
@@ -691,34 +815,8 @@
     deviceId = deviceId || userDeviceId;
     $.post( '/user/devices/list')
       .done(function success(resp) {
-        $('#pics .band').removeClass('active');
         if (resp.devices) {
-          var deviceDomLi = ['','']; // [deskElms, mobileElms];
-          var descr;
-          for (var device in resp.devices) {
-            if (resp.devices[device].state != 'disable') {
-              descr = resp.devices[device].descr.split('_');
-              deviceDomLi[((descr[0] == 'desktop') ? 1 : 0)] += '<li class="device' + ((userDeviceId == device) ? ' current' : '') + '">'
-                            +  '<div>'
-                              +  '<img class="devicePic" src="/img/' + descr[1] + '.png">'
-                            + '</div>'
-                            +  '<div class="deviceDescr">'
-                              +  '<span class="label">Device id:<br></span><span class="deviceId">' + device + '</span>'
-                              +  '<br><span class="label">Type:</span> ' + descr.join(' ')
-                              +  '<br><span class="label">State:</span> ' + resp.devices[device].state
-                            + '</div>'
-                            + '<div>'
-                              + '<input type="radio" name="' + descr[0] + '" ' + ((resp.devices[device].state == 'active') ? 'checked' : '') + '>'
-                            + '</div>'
-                          + '</li>'
-            }
-          }
-          if (deviceDomLi[0] != '') {
-            $('#pics .band.mobile').addClass('active').append('<h1 class="title">Mobile</h1>' + deviceDomLi[0]);
-          }
-          if (deviceDomLi[1] != '') {
-            $('#pics .band.desktop').addClass('active').append('<h1 class="title">Desktop</h1>' + deviceDomLi[1]);
-          }
+          updateDeviceListUI(resp.devices);
         }
       })
       .fail(function error(resp) {
@@ -728,7 +826,7 @@
 
   /**
    * Update UI after login POST.
-   * @function createFallbackData
+   * @function userLogin
    * @param {Object} $domRef DOM element => modal form container
    * @return {Object | String} resp Server login response data
    */
@@ -736,7 +834,25 @@
     if (resp.url) {
       window.location.href = resp.url;
     } else {
-      console.log('')
+      console.log(resp.responseJSON);
+    }
+  }
+
+  /**
+   * Callback changePassword
+   * @function changePassword
+   * @param {Object} $domRef DOM element => modal form container
+   * @return {Object | String} resp Server login response data
+   */
+  function changePassword($domRef, resp) {
+    if (resp.url) {
+      cObj = JSON.parse(atob(document.cookie.match(new RegExp('cs=([^;]+)'))[1]));
+      $('.modal').hide();
+      $('.modal .password').hide();
+      $('.content').show();
+      console.log('Password Changed')
+    } else {
+      console.log(resp.responseJSON);
     }
   }
 
@@ -791,6 +907,23 @@
       ((typeof callback == 'function') && callback(request.result));
     };
   }
+  /**
+   * Clean the _IndexedDB_
+   * @return {undefined}
+   */
+  function clearIndexedDB(callback) {
+    var transaction = db.transaction(['userVp'], "readwrite");
+    var objectStore = transaction.objectStore('userVp');
+    var request = objectStore.clear();
+
+    request.onerror = function fail() {
+      console.log('Transaction failed');
+    };
+
+    request.onsuccess = function success() {
+      ((typeof callback == 'function') && callback());
+    };
+  }
 
   /**
    * Updated the incoming record in the _IndexedDB_
@@ -814,9 +947,9 @@
    * @return {boolean} Auth
    */
   function checkAuth() {
-    var checkKp = document.cookie.match(new RegExp('cs=([^;]+)'));
-    if (!checkKp) {
-      console.log('no active session.');
+    var cs = document.cookie.match(new RegExp('cs=([^;]+)'));
+    if (!cs || (cObj && (cObj.ref != JSON.parse(atob(cs[1])).ref))) {
+      logOut();
       return false;
     }
     getDeviceRecordFromIndexedDB(1, function checkActiveDevice(deviceRecord) {
@@ -861,6 +994,39 @@
         }
       };
     }
+  }
+
+  function updateDeviceListUI(devices) {
+    $('#pics .band').removeClass('active');
+    var deviceDomLi = ['','']; // [deskElms, mobileElms];
+    var descr;
+    for (var device in devices) {
+      if (devices[device].state != 'disable') {
+        descr = devices[device].descr.split('_');
+        deviceDomLi[((descr[0] == 'desktop') ? 1 : 0)] += '<li class="device ' + descr[0] + ((userDeviceId == device) ? ' current' : '') + ((devices[device].state == 'active') ? ' push' : '') + '">'
+                      +  '<div>'
+                        +  '<img class="devicePic" src="/img/' + descr[1] + '.png">'
+                      + '</div>'
+                      +  '<div class="deviceDescr">'
+                        +  '<span class="label">Device id:<br></span><span class="deviceId">' + device + '</span>'
+                        +  '<br><span class="label">Type:</span> ' + descr.join(' ')
+                        +  '<br><span class="label">State: </span><span class="state">' + devices[device].state + '</span>'
+                      + '</div>'
+                      + '<div>'
+                        + '<input type="radio" name="pushDevice" ' + ((devices[device].state == 'active') ? 'checked' : '') + '>'
+                      + '</div>'
+                    + '</li>'
+      }
+    }
+    $('#pics .band').addClass('active').html(deviceDomLi);
+  }
+
+  function logOut() {
+    clearIndexedDB(function onComplete() {
+      clearInterval(checkInter);
+      document.cookie = 'cs=;';
+      window.location.href = '/';
+    })
   }
 
   appSW.subscribeUser = function fcnSubscribeSW(SWReg) {
