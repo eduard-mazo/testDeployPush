@@ -1,20 +1,14 @@
 'use strict';
 
-<<<<<<< HEAD
 var utils = require('../lib/utils');
 
-=======
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
 module.exports = function user(userIndex) {
   var self = {};
   var _getUserByEmail = userIndex.getUserByEmail;
   var _getUserByUsername = userIndex.getUserByUsername;
-<<<<<<< HEAD
   var _createUserRecord = userIndex.createUserRecord;
   var _getUserByRefId = userIndex.getUserByRefId;
   var _updateUserPassword = userIndex.updateUserPassword;
-=======
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
   var _existID = userIndex.existID;
 
   self.login = login;
@@ -28,7 +22,6 @@ module.exports = function user(userIndex) {
   function login(req, res) {
     var userIdentifier = req.body.userIdentifier;
     var userData = ((userIdentifier.match(/@/)) ? _getUserByEmail(userIdentifier) : _getUserByUsername(userIdentifier));
-<<<<<<< HEAD
     if (userData) {
       if ((userData.password === utils.genCryptoHashed(req.body.password))) {
         updateSession(userData, req, res);
@@ -63,12 +56,6 @@ module.exports = function user(userIndex) {
       });
     } else {
       res.status(401).send({message: 'bad credentials try later!'});
-=======
-    if (userData && (userData.password == req.body.password)) {
-      updateSession(userData, req, res);
-    } else {
-      res.status(401).send({url: '/'});
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
     }
   }
 
@@ -103,7 +90,6 @@ module.exports = function user(userIndex) {
     }
   }
 
-<<<<<<< HEAD
   // self.expireUserSessions = function fcnExpireUserSessions(req, res) {
   //   var user = _userIndexBy.refId[req.session.ref];
   //   var oldRefId = Utils.obfuscate('1', 'u_' + user._id + '_' + user.refLastUpdated.toString(36));
@@ -123,7 +109,5 @@ module.exports = function user(userIndex) {
   //     });
   // };
 
-=======
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
   return self;
 };

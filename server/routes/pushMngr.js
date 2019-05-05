@@ -34,11 +34,7 @@ module.exports = function pushMngr(userIndex) {
    * @return {undefined}
    */
   async function subscribe(req, res) {
-<<<<<<< HEAD
     var userId = req.session.ref && (_getUserByRefId(req.session.ref)._id).toHexString();
-=======
-    var userId = req.session.ref;
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
     var deviceId;
     var deviceState;
 
@@ -74,35 +70,21 @@ module.exports = function pushMngr(userIndex) {
    */
   function devices(req, res) {
     var type = req.params.type;
-<<<<<<< HEAD
     var userId = req.session.ref && (_getUserByRefId(req.session.ref)._id).toHexString();
     var devicesList;
     var content;
     if (type == 'list') {
       devicesList = _getAllUserDevices(userId);
-=======
-    var devicesList;
-    if (type == 'list') {
-      devicesList = _getAllUserDevices(req.session.ref);
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
       if (devicesList) {
         res.status(200).send({devices: devicesList});
       } else {
         res.status(404);
       }
-<<<<<<< HEAD
     } else if ((type == 'update') || (type == 'disableSingle')) {
       var userDevice = _getDeviceById(userId, req.body.deviceId);
       var subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
       content = {
         title: ((type == 'disableSingle') ? 'closeSession' : 'Device registered'),
-=======
-    } else if (type == 'update') {
-      var userDevice = _getDeviceById(req.session.ref, req.body.deviceId);
-      var subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
-      var content = {
-        title: 'Device registered',
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
         message: {
           body: 'This device is ready for VP push notifications.',
           badge: 'img/vpBlack.png',
@@ -111,7 +93,6 @@ module.exports = function pushMngr(userIndex) {
         }
       };
       dispatchPush('push', req.body.deviceId, subscription, content, 60, function complete(error, deviceId) {
-<<<<<<< HEAD
         if (type == 'update') {
           devicesList = _getAllUserDevices(userId);
           if (!error) {
@@ -142,16 +123,6 @@ module.exports = function pushMngr(userIndex) {
           res.status(200);
         }
       }
-=======
-        devicesList = _getAllUserDevices(req.session.ref);
-        if (!error) {
-          _updateDevicesState(req.session.ref, deviceId);
-          res.status(200).send({message: 'Device updated!', devices: devicesList});
-        } else {
-          res.status(404).send({message: 'Choose another!', devices: devicesList});
-        }
-      });
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
     }
   }
 
@@ -170,12 +141,8 @@ module.exports = function pushMngr(userIndex) {
         }
       });
     } else if (req.params.type == 'single') {
-<<<<<<< HEAD
       var userId = (_getUserByRefId(req.session.ref)._id).toHexString();
       userDevice = _getDeviceById(userId, req.body.content.message.tag);
-=======
-      userDevice = _getDeviceById(req.session.ref, req.body.content.message.tag);
->>>>>>> 72902c7687ec10288f9a7b69c247646d60870e95
       if (userDevice && (userDevice.state != 'disable')) {
         subscription = {endpoint: userDevice.endpoints[0], keys: userDevice.keys};
         dispatchPush(((userDevice.state == 'active') ? 'push' : 'local'), req.body.content.message.tag, subscription, req.body.content, 60);
